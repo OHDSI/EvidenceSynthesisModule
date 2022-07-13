@@ -1,0 +1,40 @@
+{
+  "sharedResources": [],
+  "moduleSpecifications": [
+    {
+      "settings": [
+        {
+          "alpha": 0.05,
+          "evidenceSynthesisAnalysisId": 1,
+          "evidenceSynthesisSource": {
+            "sourceMethod": "CohortMethod",
+            "likelihoodApproximation": "adaptive grid",
+            "attr_class": "EvidenceSynthesisSource"
+          },
+          "attr_class": ["FixedEffectsMetaAnalysis", "EvidenceSynthesisAnalysis"]
+        },
+        {
+          "chainLength": 1100000,
+          "burnIn": 100000,
+          "subSampleFrequency": 100,
+          "priorSd": [2, 0.5],
+          "alpha": 0.05,
+          "seed": 1,
+          "evidenceSynthesisAnalysisId": 1,
+          "evidenceSynthesisSource": {
+            "sourceMethod": "CohortMethod",
+            "likelihoodApproximation": "adaptive grid",
+            "attr_class": "EvidenceSynthesisSource"
+          },
+          "attr_class": ["BayesianMetaAnalysis", "EvidenceSynthesisAnalysis"]
+        }
+      ],
+      "module": "EvidenceSynthesisModule",
+      "version": "0.0.1",
+      "remoteRepo": "github.com",
+      "remoteUsername": "ohdsi",
+      "attr_class": ["EvidenceSynthesisModuleSpecifications", "ModuleSpecifications"]
+    }
+  ],
+  "attr_class": "AnalysisSpecifications"
+}
