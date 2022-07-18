@@ -1,8 +1,26 @@
+# Copyright 2022 Observational Health Data Sciences and Informatics
+#
+# This file is part of EvidenceSynthesisModule
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 #' Create an evidence synthesis source
 #'
 #' @param sourceMethod            The source method generating the estimates to synthesize. Can be "CohortMethod" or
 #'                                "SelfControlledCaseSeries"
 #' @param databaseIds             The database  IDs to include. Use `databaseIds = NULL` to include all database IDs.
+#' @param analysisIds             The source method analysis IDs to include. Use `analysisIds = NULL` to include all
+#'                                analysis IDs.
 #' @param likelihoodApproximation The type of likelihood approximation. Can be "adaptive grid" or "normal".
 #'
 #' @return
@@ -11,9 +29,16 @@
 #' @export
 createEvidenceSynthesisSource <- function(sourceMethod = "CohortMethod",
                                           databaseIds = NULL,
+                                          analysisIds = NULL,
                                           likelihoodApproximation = "adaptive grid") {
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertChoice(sourceMethod, c("CohortMethod", "SelfControlledCaseSeries"), add = errorMessages)
+  if (is.character(databaseIds)) {
+    checkmate::assertCharacter(databaseIds, null.ok = TRUE, add = errorMessages)
+  } else {
+    checkmate::assertIntegerish(databaseIds, null.ok = TRUE, add = errorMessages)
+  }
+  checkmate::assertIntegerish(analysisIds, null.ok = TRUE, add = errorMessages)
   checkmate::assertChoice(likelihoodApproximation, c("adaptive grid", "normal"), add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
 
@@ -42,7 +67,6 @@ createEvidenceSynthesisModuleSpecifications <- function(evidenceSynthesisAnalysi
     checkmate::assertClass(evidenceSynthesisAnalysisList[[i]], "EvidenceSynthesisAnalysis", add = errorMessages)
   }
   checkmate::reportAssertions(collection = errorMessages)
-
   specifications <- list(settings = evidenceSynthesisAnalysisList,
                          module = "%module%",
                          version = "%version%",
@@ -51,3 +75,31 @@ createEvidenceSynthesisModuleSpecifications <- function(evidenceSynthesisAnalysi
   class(specifications) <- c("EvidenceSynthesisModuleSpecifications", "ModuleSpecifications")
   return(specifications)
 }
+
+#' Create parameters for a random-effects meta-analysis
+#'
+#' @details
+#' Use DerSimonian-Laird meta-analysis
+#'
+#' @param alpha  The alpha (expected type I error) used for the confidence intervals.
+#' @param evidenceSynthesisAnalysisId
+#' @param evidenceSynthesisSource
+#' @param controlType
+#'
+#' @export
+createRandomEffectsMetaAnalysis <- function(alpha = 0.05,
+                                            evidenceSynthesisAnalysisId = 1,
+                                            evidenceSynthesisDescription = "Random-effects",
+                                            evidenceSynthesisSource = NULL,
+                                            controlType = "outcome") {
+  if (evidenceSynthesisSource$likelihoodApproximation != "normal") {
+    stop("Random-effects meta-analysis only supports normal approximation of the likelihood.")
+  }
+  analysis <- list()
+  for (name in names(formals(createFixedEffectsMetaAnalysis))) {
+    analysis[[name]] <- get(name)
+  }
+  class(analysis) <- c("RandomEffectsMetaAnalysis", "EvidenceSynthesisAnalysis")
+  return(analysis)
+}
+

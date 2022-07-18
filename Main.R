@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+source("EvidenceSynthesisFunctions.R")
+
 # Module methods -------------------------
 execute <- function(jobContext) {
   checkmate::assertList(x = jobContext)
@@ -27,7 +29,18 @@ execute <- function(jobContext) {
     stop("Execution settings not found in job context")
   }
 
-  message("Executing evidence synthesis")
+  writeAnalysisSpecs(
+    analysisSpecs = jobContext$settings,
+    resultsFolder = jobContext$moduleExecutionSettings$resultsSubFolder
+  )
 
+  executeEvidenceSynthesis(
+    connectionDetails = jobContext$moduleExecutionSettings$resultConnectionDetails,
+    databaseSchema = jobContext$moduleExecutionSettings$resultsDatabaseSchema,
+    settings = jobContext$settings,
+    resultsFolder = jobContext$moduleExecutionSettings$resultsSubFolder,
+    minCellCount = jobContext$moduleExecutionSettings$minCellCount
+  )
+
+  file.copy("resultsDataModelSpecification.csv", file.path(jobContext$moduleExecutionSettings$resultsSubFolder, "resultsDataModelSpecification.csv"))
 }
-
