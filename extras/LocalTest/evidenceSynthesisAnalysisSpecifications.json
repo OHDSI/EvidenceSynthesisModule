@@ -70,9 +70,9 @@
         }
       ],
       "module": "EvidenceSynthesisModule",
-      "version": "0.0.1-3",
+      "version": "0.0.1",
       "remoteRepo": "github.com",
-      "remoteUsername": "anthonysena",
+      "remoteUsername": "ohdsi",
       "attr_class": ["EvidenceSynthesisModuleSpecifications", "ModuleSpecifications"]
     }
   ],
