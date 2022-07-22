@@ -35,7 +35,7 @@ execute <- function(jobContext) {
   )
 
   executeEvidenceSynthesis(
-    connectionDetails = jobContext$moduleExecutionSettings$resultConnectionDetails,
+    connectionDetails = jobContext$moduleExecutionSettings$resultsConnectionDetails,
     databaseSchema = jobContext$moduleExecutionSettings$resultsDatabaseSchema,
     settings = jobContext$settings,
     resultsFolder = jobContext$moduleExecutionSettings$resultsSubFolder,

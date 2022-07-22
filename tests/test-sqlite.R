@@ -12,7 +12,7 @@ dir.create(resultsfolder)
 jobContext <- readRDS("tests/testJobContext.rds")
 jobContext$moduleExecutionSettings$workSubFolder <- workFolder
 jobContext$moduleExecutionSettings$resultsSubFolder  <- resultsfolder
-jobContext$moduleExecutionSettings$resultConnectionDetails <- connectionDetails
+jobContext$moduleExecutionSettings$resultsConnectionDetails <- connectionDetails
 
 test_that("Run module", {
   source("Main.R")

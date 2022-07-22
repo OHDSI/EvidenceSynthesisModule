@@ -127,6 +127,8 @@ createFixedEffectsMetaAnalysis <- function(alpha = 0.05,
     analysis[[name]] <- get(name)
   }
   class(analysis) <- c("FixedEffectsMetaAnalysis", "EvidenceSynthesisAnalysis")
+  if (evidenceSynthesisSource$likelihoodApproximation != "normal")
+                stop("Fixed-effects meta-analysis only supports normal approximation of the likelihood.")
   return(analysis)
 }
 

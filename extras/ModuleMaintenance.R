@@ -35,6 +35,11 @@ rCode <- ParallelLogger::createArgFunction(functionName = 'computeFixedEffectMet
                                                           evidenceSynthesisSource = NULL,
                                                           controlType = "outcome"),
                                            rCode = rCode)
+rCode <- c(rCode[1:(length(rCode) - 2)],
+           "  if (evidenceSynthesisSource$likelihoodApproximation != \"normal\")
+                stop(\"Fixed-effects meta-analysis only supports normal approximation of the likelihood.\")",
+           rCode[(length(rCode) - 1):length(rCode)])
+
 rCode[grep("class\\(analysis\\) <- \"args\"", rCode)] <- "  class(analysis) <- c(\"FixedEffectsMetaAnalysis\", \"EvidenceSynthesisAnalysis\")"
 rCode <- ParallelLogger::createArgFunction(functionName = 'computeBayesianMetaAnalysis',
                                            excludeArgs = c("data"),
