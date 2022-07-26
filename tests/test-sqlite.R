@@ -49,6 +49,30 @@ test_that("Throw warning if no unblinded estimates found", {
   expect_warning(execute(tempJobContext), "No unblinded estimates found")
 })
 
+test_that("Don't error when no negative controls present", {
+  # Create dataset without negative controls
+  tempFile <- tempfile(fileext = ".sqlite")
+  file.copy("tests/results.sqlite", tempFile)
+  on.exit(unlink(tempFile))
+  tempConnectionDetails <- DatabaseConnector::createConnectionDetails(
+    dbms = "sqlite",
+    server = tempFile
+  )
+  connection <- DatabaseConnector::connect(tempConnectionDetails)
+  DatabaseConnector::renderTranslateExecuteSql(connection, "UPDATE cm_target_comparator_outcome SET true_effect_size = NULL;")
+  DatabaseConnector::disconnect(connection)
+
+  tempJobContext <- jobContext
+  tempJobContext$settings <- list(tempJobContext$settings[[1]])
+  tempJobContext$moduleExecutionSettings$resultsConnectionDetails <- tempConnectionDetails
+  execute(tempJobContext)
+
+  estimates <- readr::read_csv(file.path(resultsFolder, "es_cm_result.csv"), show_col_types = FALSE)
+  expect_gt(nrow(estimates), 0)
+  expect_true(all(is.na(estimates$calibrated_rr)))
+})
+
+
 # readr::write_csv(OhdsiRTools::createResultsSchemaStub(resultsFolder), "resultsDataModelSpecification.csv")
 
 unlink(workFolder)

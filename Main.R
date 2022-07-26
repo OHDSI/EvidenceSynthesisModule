@@ -40,4 +40,5 @@ execute <- function(jobContext) {
   )
 
   file.copy("resultsDataModelSpecification.csv", file.path(jobContext$moduleExecutionSettings$resultsSubFolder, "resultsDataModelSpecification.csv"))
+  invisible(NULL)
 }
