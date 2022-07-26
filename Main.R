@@ -22,9 +22,6 @@ execute <- function(jobContext) {
   if (is.null(jobContext$settings)) {
     stop("Analysis settings not found in job context")
   }
-  if (is.null(jobContext$sharedResources)) {
-    stop("Shared resources not found in job context")
-  }
   if (is.null(jobContext$moduleExecutionSettings)) {
     stop("Execution settings not found in job context")
   }

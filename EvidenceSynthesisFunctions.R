@@ -64,6 +64,32 @@ doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFold
     databaseSchema = databaseSchema,
     evidenceSynthesisSource = analysisSettings$evidenceSynthesisSource
   )
+  if (nrow(perDbEstimates$estimates) == 0) {
+    message <- sprintf(
+      "No unblinded estimates found for source method '%s'",
+      analysisSettings$evidenceSynthesisSource$sourceMethod)
+    if (!is.null(analysisSettings$evidenceSynthesisSource$databaseIds)) {
+      message <- sprintf("%s restricting to database IDs %s",
+                         message,
+                         paste(analysisSettings$evidenceSynthesisSource$databaseIds, collapse = ", "))
+    }
+    if (!is.null(analysisSettings$evidenceSynthesisSource$analysisIds)) {
+      message <- sprintf("%s restricting to analysis IDs %s",
+                         message,
+                         paste(analysisSettings$evidenceSynthesisSource$analysisIds, collapse = ", "))
+    }
+    warning(message)
+
+    diagnostics <- createEmptyResult("es_cm_diagnostics_summary")
+    fileName <- file.path(resultsFolder, "es_cm_diagnostics_summary.csv")
+    writeToCsv(data = diagnostics, fileName = fileName, append = file.exists(fileName))
+
+    estimates <- createEmptyResult("es_cm_result")
+    fileName <- file.path(resultsFolder, "es_cm_result.csv")
+    writeToCsv(data = estimates, fileName = fileName, append = file.exists(fileName))
+    return()
+  }
+
   fullKeys <- perDbEstimates$estimates[, c(perDbEstimates$key, "analysisId")] %>%
     distinct()
 
@@ -116,7 +142,7 @@ doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFold
                               .data$tauDiagnostic != "FAIL" &
                               .data$easeDiagnostic != "FAIL", 1, 0))
   if (analysisSettings$evidenceSynthesisSource$sourceMethod == "CohortMethod") {
-    fileName <- file.path(resultsfolder, "es_cm_diagnostics_summary.csv")
+    fileName <- file.path(resultsFolder, "es_cm_diagnostics_summary.csv")
   } else {
     stop(sprintf("Saving diagnostics summary not implemented for source method '%s'", analysisSettings$evidenceSynthesisSource$sourceMethod))
   }
@@ -127,7 +153,7 @@ doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFold
     select(-.data$trueEffectSize, -.data$outcomeOfInterest, -.data$ease, -.data$i2, -.data$tau)
 
   if (analysisSettings$evidenceSynthesisSource$sourceMethod == "CohortMethod") {
-    fileName <- file.path(resultsfolder, "es_cm_result.csv")
+    fileName <- file.path(resultsFolder, "es_cm_result.csv")
   } else {
     stop(sprintf("Saving results not implemented for source method '%s'", analysisSettings$evidenceSynthesisSource$sourceMethod))
   }
@@ -412,4 +438,19 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
 writeToCsv <- function(data, fileName, append) {
   data <- SqlRender::camelCaseToSnakeCaseNames(data)
   readr::write_csv(data, fileName, append = append)
+}
+
+createEmptyResult <- function(tableName = "") {
+  columns <- readr::read_csv(
+    file = "resultsDataModelSpecification.csv",
+    show_col_types = FALSE) %>%
+    SqlRender::snakeCaseToCamelCaseNames() %>%
+    filter(.data$tableName == !!tableName) %>%
+    pull(.data$columnName) %>%
+    SqlRender::snakeCaseToCamelCase()
+  result <- vector(length = length(columns))
+  names(result) <- columns
+  result <- as_tibble(t(result), name_repair = "check_unique")
+  result <- result[FALSE, ]
+  return(result)
 }
