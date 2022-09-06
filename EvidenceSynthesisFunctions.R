@@ -57,7 +57,7 @@ executeEvidenceSynthesis <- function(connectionDetails, databaseSchema, settings
   )
 }
 
-# analysisSettings = settings[[1]]
+# analysisSettings = settings[[2]]
 doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFolder, minCellCount) {
   perDbEstimates <- getPerDatabaseEstimates(
     connection = connection,
@@ -130,7 +130,7 @@ doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFold
     mutate(evidenceSynthesisAnalysisId = analysisSettings$evidenceSynthesisAnalysisId)
 
   # Save diagnostics
-  diagnostics <- estimates[, c(perDbEstimates$key, "analysisId", "i2", "tau", "ease")] %>%
+  diagnostics <- estimates[, c(perDbEstimates$key, "analysisId", "i2", "tau", "ease", "evidenceSynthesisAnalysisId")] %>%
     mutate(i2Diagnostic = ifelse(!is.na(i2) & i2 > 0.4, "FAIL", "PASS")) %>%
     mutate(tauDiagnostic = ifelse(!is.na(tau) & tau > log(2), "FAIL", "PASS")) %>%
     mutate(easeDiagnostic = case_when(
@@ -198,7 +198,8 @@ calibrateEstimates <- function(group) {
   return(group)
 }
 
-# row <- split(fullKeys, seq_len(nrow(fullKeys)))[[1]]
+# row <- split(fullKeys, seq_len(nrow(fullKeys)))[[2]]
+# row <- tibble(targetId = 8413, comparatorId = 8436, outcomeId = 1078, analysisId = 2)
 doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, minCellCount) {
   sumMinCellCount <- function(counts, minCellCount) {
     if (length(counts) == 0) {
@@ -232,7 +233,7 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
       filter(!is.na(.data$logRr) & !is.na(.data$seLogRr))
     includedDbs <- llApproximations$databaseId
   } else if (analysisSettings$evidenceSynthesisSource$likelihoodApproximation == "adaptive grid") {
-    includedDbs <- llApproximations$databaseId
+    includedDbs <- unique(llApproximations$databaseId)
     llApproximations <- llApproximations %>%
       select(point = .data$logRr,
              value = .data$logLikelihood,
@@ -258,14 +259,14 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
 
   if (nDatabases == 0) {
     estimate <- tibble(
-      rr = NA,
-      ci95Lb = NA,
-      ci95Ub = NA,
-      p = NA,
-      logRr = NA,
-      seLogRr = NA,
-      i2 = NA,
-      tau = NA
+      rr = as.numeric(NA),
+      ci95Lb = as.numeric(NA),
+      ci95Ub = as.numeric(NA),
+      p = as.numeric(NA),
+      logRr = as.numeric(NA),
+      seLogRr = as.numeric(NA),
+      i2 = as.numeric(NA),
+      tau = as.numeric(NA)
     )
   } else if (nDatabases == 1) {
     estimate <- tibble(
@@ -301,6 +302,7 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
                          seTE = llApproximations$seLogRr,
                          studlab = rep("", nrow(llApproximations)),
                          byvar = NULL,
+                         control = list(maxiter=1000),
                          sm = "RR",
                          level.comb = 1 - analysisSettings$alpha)
       rfx <- summary(m)$random
@@ -346,7 +348,7 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
     key <- c("targetId", "comparatorId", "outcomeId")
     databaseIds <- evidenceSynthesisSource$databaseIds
     analysisIds <- evidenceSynthesisSource$analysisIds
-    toInclude <- "SELECT target_id,
+    unblinded <- "SELECT target_id,
       comparator_id,
       outcome_id,
       analysis_id,
@@ -355,8 +357,8 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
     WHERE unblind = 1
     {@database_ids != ''} ? {  AND database_id IN (@database_ids)}
     {@analysis_ids != ''} ? {  AND analysis_id IN (@analysis_ids)}"
-    toInclude <- SqlRender::render(
-      sql = toInclude,
+    unblinded <- SqlRender::render(
+      sql = unblinded,
       database_schema = databaseSchema,
       database_ids = if (is.null(databaseIds)) "" else databaseIds,
       analysis_ids = if (is.null(analysisIds)) "" else analysisIds
@@ -364,23 +366,40 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
 
     sql <- "SELECT cm_result.*
       FROM @database_schema.cm_result
-      INNER JOIN (
-        @to_include
-      ) to_include
-      ON cm_result.target_id = to_include.target_id
-        AND cm_result.comparator_id = to_include.comparator_id
-        AND cm_result.outcome_id = to_include.outcome_id
-        AND cm_result.analysis_id = to_include.analysis_id
-        AND cm_result.database_id = to_include.database_id;
+      INNER JOIN @database_schema.cm_target_comparator_outcome
+        ON cm_result.target_id = cm_target_comparator_outcome.target_id
+          AND cm_result.comparator_id = cm_target_comparator_outcome.comparator_id
+          AND cm_result.outcome_id = cm_target_comparator_outcome.outcome_id
+      LEFT JOIN (
+        @unblinded
+      ) unblinded
+      ON cm_result.target_id = unblinded.target_id
+        AND cm_result.comparator_id = unblinded.comparator_id
+        AND cm_result.outcome_id = unblinded.outcome_id
+        AND cm_result.analysis_id = unblinded.analysis_id
+        AND cm_result.database_id = unblinded.database_id
+      WHERE (outcome_of_interest = 0 OR unblinded.target_id IS NOT NULL);
       "
     estimates <- DatabaseConnector::renderTranslateQuerySql(
       connection = connection,
       sql = sql,
       database_schema = databaseSchema,
-      to_include = toInclude,
+      unblinded = unblinded,
       snakeCaseToCamelCase = TRUE
     ) %>%
       as_tibble()
+
+    # Temp hack: detect NA values that have been converted to 0 in the DB:
+    idx <- estimates$seLogRr == 0
+    estimates$logRr[idx] <- NA
+    estimates$seLogRr[idx] <- NA
+    estimates$p[idx] <- NA
+
+    # Temp hack: CIs are stored as varcar, should be numeric
+    estimates$ci95Lb <- as.numeric(estimates$ci95Lb)
+    estimates$ci95Ub <- as.numeric(estimates$ci95Ub)
+    estimates$calibratedCi95Lb <- as.numeric(estimates$calibratedCi95Lb)
+    estimates$calibratedCi95Ub <- as.numeric(estimates$calibratedCi95Ub)
 
     if (evidenceSynthesisSource$likelihoodApproximation == "normal") {
       llApproximations <- estimates %>%
@@ -396,20 +415,24 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
     } else if (evidenceSynthesisSource$likelihoodApproximation == "adaptive grid") {
       sql <- "SELECT cm_likelihood_profile.*
       FROM @database_schema.cm_likelihood_profile
-      INNER JOIN (
-        @to_include
-      ) to_include
-      ON cm_likelihood_profile.target_id = to_include.target_id
-        AND cm_likelihood_profile.comparator_id = to_include.comparator_id
-        AND cm_likelihood_profile.outcome_id = to_include.outcome_id
-        AND cm_likelihood_profile.analysis_id = to_include.analysis_id
-        AND cm_likelihood_profile.database_id = to_include.database_id;
+      INNER JOIN @database_schema.cm_target_comparator_outcome
+        ON cm_likelihood_profile.target_id = cm_target_comparator_outcome.target_id
+          AND cm_likelihood_profile.comparator_id = cm_target_comparator_outcome.comparator_id
+          AND cm_likelihood_profile.outcome_id = cm_target_comparator_outcome.outcome_id
+      LEFT JOIN (
+        @unblinded
+      ) unblinded
+      ON cm_likelihood_profile.target_id = unblinded.target_id
+        AND cm_likelihood_profile.comparator_id = unblinded.comparator_id
+        AND cm_likelihood_profile.outcome_id = unblinded.outcome_id
+        AND cm_likelihood_profile.analysis_id = unblinded.analysis_id
+        AND cm_likelihood_profile.database_id = unblinded.database_id;
       "
       llApproximations <- DatabaseConnector::renderTranslateQuerySql(
         connection = connection,
         sql = sql,
         database_schema = databaseSchema,
-        to_include = toInclude,
+        unblinded = unblinded,
         snakeCaseToCamelCase = TRUE
       )
     } else {
