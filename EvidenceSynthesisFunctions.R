@@ -354,14 +354,10 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
       analysis_id,
       database_id
     FROM @database_schema.cm_diagnostics_summary
-    WHERE unblind = 1
-    {@database_ids != ''} ? {  AND database_id IN (@database_ids)}
-    {@analysis_ids != ''} ? {  AND analysis_id IN (@analysis_ids)}"
+    WHERE unblind = 1"
     unblinded <- SqlRender::render(
       sql = unblinded,
-      database_schema = databaseSchema,
-      database_ids = if (is.null(databaseIds)) "" else databaseIds,
-      analysis_ids = if (is.null(analysisIds)) "" else analysisIds
+      database_schema = databaseSchema
     )
 
     sql <- "SELECT cm_result.*
@@ -378,13 +374,17 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
         AND cm_result.outcome_id = unblinded.outcome_id
         AND cm_result.analysis_id = unblinded.analysis_id
         AND cm_result.database_id = unblinded.database_id
-      WHERE (outcome_of_interest = 0 OR unblinded.target_id IS NOT NULL);
+      WHERE (outcome_of_interest = 0 OR unblinded.target_id IS NOT NULL)
+      {@database_ids != ''} ? {  AND cm_result.database_id IN (@database_ids)}
+      {@analysis_ids != ''} ? {  AND cm_result.analysis_id IN (@analysis_ids)};
       "
     estimates <- DatabaseConnector::renderTranslateQuerySql(
       connection = connection,
       sql = sql,
       database_schema = databaseSchema,
       unblinded = unblinded,
+      database_ids = if (is.null(databaseIds)) "" else databaseIds,
+      analysis_ids = if (is.null(analysisIds)) "" else analysisIds,
       snakeCaseToCamelCase = TRUE
     ) %>%
       as_tibble()
@@ -398,8 +398,6 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
     # Temp hack: CIs are stored as varcar, should be numeric
     estimates$ci95Lb <- as.numeric(estimates$ci95Lb)
     estimates$ci95Ub <- as.numeric(estimates$ci95Ub)
-    estimates$calibratedCi95Lb <- as.numeric(estimates$calibratedCi95Lb)
-    estimates$calibratedCi95Ub <- as.numeric(estimates$calibratedCi95Ub)
 
     if (evidenceSynthesisSource$likelihoodApproximation == "normal") {
       llApproximations <- estimates %>%
@@ -426,13 +424,18 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
         AND cm_likelihood_profile.comparator_id = unblinded.comparator_id
         AND cm_likelihood_profile.outcome_id = unblinded.outcome_id
         AND cm_likelihood_profile.analysis_id = unblinded.analysis_id
-        AND cm_likelihood_profile.database_id = unblinded.database_id;
+        AND cm_likelihood_profile.database_id = unblinded.database_id
+        WHERE log_likelihood IS NOT NULL
+      {@database_ids != ''} ? {  AND cm_likelihood_profile.database_id IN (@database_ids)}
+      {@analysis_ids != ''} ? {  AND cm_likelihood_profile.analysis_id IN (@analysis_ids)};
       "
       llApproximations <- DatabaseConnector::renderTranslateQuerySql(
         connection = connection,
         sql = sql,
         database_schema = databaseSchema,
         unblinded = unblinded,
+        database_ids = if (is.null(databaseIds)) "" else databaseIds,
+        analysis_ids = if (is.null(analysisIds)) "" else analysisIds,
         snakeCaseToCamelCase = TRUE
       )
     } else {

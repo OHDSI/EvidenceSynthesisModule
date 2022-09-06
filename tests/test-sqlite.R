@@ -26,7 +26,7 @@ test_that("Run module", {
 test_that("Skipped analyses as specified", {
   # We specified we didn't want cohort method analysis ID 2 in evidence synthesis ID 2:
   results <- CohortGenerator::readCsv(file.path(resultsFolder, "es_cm_result.csv"))
-  expect_false(any(results$evidenceSynthesisAnalysisId == 1 & results$analysisId == 2))
+  expect_false(any(results$evidenceSynthesisAnalysisId == 2 & results$analysisId == 2))
 })
 
 test_that("Output conforms to results model", {
