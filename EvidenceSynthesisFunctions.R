@@ -57,7 +57,7 @@ executeEvidenceSynthesis <- function(connectionDetails, databaseSchema, settings
   )
 }
 
-# analysisSettings = settings[[2]]
+# analysisSettings = settings[[1]]
 doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFolder, minCellCount) {
   perDbEstimates <- getPerDatabaseEstimates(
     connection = connection,
@@ -450,6 +450,10 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
       database_schema = databaseSchema,
       snakeCaseToCamelCase = TRUE
     )
+    trueEffectSizes <- trueEffectSizes %>%
+      mutate(trueEffectSize = ifelse (!is.na(.data$trueEffectSize) & .data$trueEffectSize == 0,
+                                      NA,
+                                      .data$trueEffectSize))
   } else {
     stop(sprintf("Evidence synthesis for source method '%s' hasn't been implemented yet.", evidenceSynthesisSource$sourceMethod))
   }
