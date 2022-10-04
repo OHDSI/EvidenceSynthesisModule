@@ -10,7 +10,7 @@ es_cm_diagnostics_summary,analysis_id,int,Yes,Yes,No,No,A unique identifier for 
 es_cm_diagnostics_summary,evidence_synthesis_analysis_id,int,Yes,Yes,No,No,A foreign key referencing the es_analysis table.
 es_cm_diagnostics_summary,i_2,float,No,No,Yes,No,The I2 statistics for heterogeneity.
 es_cm_diagnostics_summary,tau,float,No,No,Yes,No,The estimated tau (standard deviation of the random-effects distribution).
-es_cm_diagnostics_summary,ease,float,Yes,No,Yes,No,The expected absolute systematic error.
+es_cm_diagnostics_summary,ease,float,No,No,Yes,No,The expected absolute systematic error.
 es_cm_diagnostics_summary,i_2_diagnostic,varchar(4),Yes,No,No,No,Pass / warning / fail classification of the I2 diagnostic.
 es_cm_diagnostics_summary,tau_diagnostic,varchar(4),Yes,No,No,No,Pass / warning / fail classification of the tau diagnostic.
 es_cm_diagnostics_summary,ease_diagnostic,varchar(7),Yes,No,No,No,Pass / warning / fail classification of the EASE diagnostic.
