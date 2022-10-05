@@ -1,3 +1,10 @@
+EvidenceSynthesisModule 0.0.3
+=============================
+
+Bugfixes
+
+1. Also setting version in SettingsFunctions.R
+
 EvidenceSynthesisModule 0.0.2
 =============================
 
