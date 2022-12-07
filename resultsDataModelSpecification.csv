@@ -19,7 +19,7 @@ es_cm_result,target_id,int,Yes,Yes,No,No,The identifier for the target cohort.
 es_cm_result,comparator_id,int,Yes,Yes,No,No,The identifier for the comparator cohort.
 es_cm_result,outcome_id,int,Yes,Yes,No,No,The identifier for the outcome cohort.
 es_cm_result,analysis_id,int,Yes,Yes,No,No,A unique identifier for the cohort method analysis.
-es_cm_result,evidence_synthesis_analysis_id,int,Yes,No,No,No,A foreign key referencing the es_analysis table.
+es_cm_result,evidence_synthesis_analysis_id,int,Yes,Yes,No,No,A foreign key referencing the es_analysis table.
 es_cm_result,rr,float,No,No,Yes,No,The estimated relative risk (e.g. the hazard ratio).
 es_cm_result,ci_95_lb,float,No,No,Yes,No,The lower bound of the 95% confidence interval of the relative risk.
 es_cm_result,ci_95_ub,float,No,No,Yes,No,The upper bound of the 95% confidence interval of the relative risk.

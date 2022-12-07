@@ -1,9 +1,16 @@
+EvidenceSynthesisModule 0.0.4
+=============================
+
+Bugfixes
+
+1. Adding `evidence_synthesis_analysis_id` to primary key of `es_cm_result` to avoid PK violations.
+
 EvidenceSynthesisModule 0.0.3
 =============================
 
 Bugfixes
 
-1. Also setting version in SettingsFunctions.R
+1. Also setting version in `SettingsFunctions.R`
 
 EvidenceSynthesisModule 0.0.2
 =============================
