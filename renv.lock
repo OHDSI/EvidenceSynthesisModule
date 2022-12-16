@@ -645,12 +645,6 @@
 			"Source" : "Repository",
 			"Repository" : "CRAN"
 		},
-		"RSQlite" : {
-			"Package" : "RSQlite",
-			"Version" : "2.2.19",
-			"Source" : "Repository",
-			"Repository" : "CRAN"
-		},
 		"renv" : {
 			"Package" : "renv",
 			"Version" : "0.16.0",
