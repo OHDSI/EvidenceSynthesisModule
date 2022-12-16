@@ -35,16 +35,21 @@ writeAnalysisSpecs <- function(analysisSpecs, resultsFolder) {
   CohortGenerator::writeCsv(evidenceSynthesisAnalysis, fileName)
 }
 
+ensureEmptyAndExists <- function(outputTable) {
+  diagnostics <- createEmptyResult(outputTable)
+  fileName <- file.path(resultsFolder, paste0(outputTable, ".csv"))
+  writeToCsv(data = diagnostics, fileName = fileName, append = FALSE)
+}
+
 executeEvidenceSynthesis <- function(connectionDetails, databaseSchema, settings, resultsFolder, minCellCount) {
   connection <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
 
-  if (file.exists(file.path(resultsFolder, "es_cm_result.csv"))){
-    unlink(file.path(resultsFolder, "es_cm_result.csv"))
-  }
-  if (file.exists(file.path(resultsFolder, "es_cm_diagnostics_summary.csv"))){
-    unlink(file.path(resultsFolder, "es_cm_diagnostics_summary.csv"))
-  }
+  outputTables <- c("es_cm_result",
+                    "es_cm_diagnostics_summary",
+                    "es_sccs_result",
+                    "es_sccs_diagnostics_summary")
+  invisible(lapply(outputTables, ensureEmptyAndExists))
 
   message("Performing evidence synthesis across databases")
   invisible(lapply(
@@ -57,7 +62,7 @@ executeEvidenceSynthesis <- function(connectionDetails, databaseSchema, settings
   )
 }
 
-# analysisSettings = settings[[1]]
+# analysisSettings = settings[[4]]
 doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFolder, minCellCount) {
   perDbEstimates <- getPerDatabaseEstimates(
     connection = connection,
@@ -79,14 +84,6 @@ doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFold
                          paste(analysisSettings$evidenceSynthesisSource$analysisIds, collapse = ", "))
     }
     warning(message)
-
-    diagnostics <- createEmptyResult("es_cm_diagnostics_summary")
-    fileName <- file.path(resultsFolder, "es_cm_diagnostics_summary.csv")
-    writeToCsv(data = diagnostics, fileName = fileName, append = file.exists(fileName))
-
-    estimates <- createEmptyResult("es_cm_result")
-    fileName <- file.path(resultsFolder, "es_cm_result.csv")
-    writeToCsv(data = estimates, fileName = fileName, append = file.exists(fileName))
     return()
   }
 
@@ -109,19 +106,25 @@ doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFold
 
   message("- Calibrating estimates")
   estimates <- estimates %>%
-    inner_join(perDbEstimates$trueEffectSizes, by = perDbEstimates$key)
+    inner_join(perDbEstimates$trueEffectSizes, by = intersect(names(estimates), names(perDbEstimates$trueEffectSizes)))
   if (analysisSettings$controlType == "outcome") {
-    controlKey <- c(perDbEstimates$key, "analysisId")
-    controlKey <- controlKey[controlKey != "outcomeId"]
-    groupKeys <- estimates[, controlKey]
-    groupKeys <- apply(groupKeys, 1, paste, collapse = "_")
+    if (analysisSettings$evidenceSynthesisSource$sourceMethod == "CohortMethod") {
+      controlKey <- c("targetId", "comparatorId", "analysisId")
+    } else if (analysisSettings$evidenceSynthesisSource$sourceMethod == "SelfControlledCaseSeries") {
+      controlKey <- c("covariateId", "analysisId")
+    }
   } else if (analysisSettings$controlType == "exposure") {
-    controlKey <- c("outcomeId", "analysisId")
-    groupKeys <- estimates[, controlKey]
-    groupKeys <- apply(groupKeys, 1, paste, collapse = "_")
+    if (analysisSettings$evidenceSynthesisSource$sourceMethod == "CohortMethod") {
+      controlKey <- c("outcomeId", "analysisId")
+    } else if (analysisSettings$evidenceSynthesisSource$sourceMethod == "SelfControlledCaseSeries") {
+      controlKey <- c("exposuresOutcomeSetId", "analysisId")
+    }
   } else {
     stop(sprintf("Unknown control type '%s'", analysisSettings$controlType))
   }
+  groupKeys <- estimates[, controlKey]
+  groupKeys <- apply(groupKeys, 1, paste, collapse = "_")
+
   estimates <- ParallelLogger::clusterApply(
     cluster = cluster,
     x = split(estimates, groupKeys),
@@ -143,21 +146,26 @@ doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFold
                               .data$easeDiagnostic != "FAIL", 1, 0))
   if (analysisSettings$evidenceSynthesisSource$sourceMethod == "CohortMethod") {
     fileName <- file.path(resultsFolder, "es_cm_diagnostics_summary.csv")
+  } else if (analysisSettings$evidenceSynthesisSource$sourceMethod == "SelfControlledCaseSeries") {
+    fileName <- file.path(resultsFolder, "es_sccs_diagnostics_summary.csv")
   } else {
     stop(sprintf("Saving diagnostics summary not implemented for source method '%s'", analysisSettings$evidenceSynthesisSource$sourceMethod))
   }
-  writeToCsv(data = diagnostics, fileName = fileName, append = file.exists(fileName))
+  writeToCsv(data = diagnostics, fileName = fileName, append = TRUE)
 
   # Save estimates
   estimates <- estimates  %>%
-    select(-.data$trueEffectSize, -.data$outcomeOfInterest, -.data$ease, -.data$i2, -.data$tau)
-
+    select(-"trueEffectSize", -"ease", -"i2", -"tau")
   if (analysisSettings$evidenceSynthesisSource$sourceMethod == "CohortMethod") {
+    estimates <- estimates  %>%
+      select(-"outcomeOfInterest")
     fileName <- file.path(resultsFolder, "es_cm_result.csv")
-  } else {
+  } else if (analysisSettings$evidenceSynthesisSource$sourceMethod == "SelfControlledCaseSeries") {
+    fileName <- file.path(resultsFolder, "es_sccs_result.csv")
+  } else{
     stop(sprintf("Saving results not implemented for source method '%s'", analysisSettings$evidenceSynthesisSource$sourceMethod))
   }
-  writeToCsv(data = estimates, fileName = fileName, append = file.exists(fileName))
+  writeToCsv(data = estimates, fileName = fileName, append = TRUE)
 }
 
 # group = split(estimates, groupKeys)[[1]]
@@ -252,6 +260,17 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
       comparatorDays = sumMinCellCount(subset$comparatorDays, 0),
       targetOutcomes = sumMinCellCount(subset$targetOutcomes, minCellCount),
       comparatorOutcomes = sumMinCellCount(subset$comparatorOutcomes, minCellCount),
+    )
+  } else if (analysisSettings$evidenceSynthesisSource$sourceMethod == "SelfControlledCaseSeries") {
+    counts <- tibble(
+      outcomeSubjects = sumMinCellCount(subset$outcomeSubjects, minCellCount),
+      outcomeEvents = sumMinCellCount(subset$outcomeEvents, minCellCount),
+      outcomeObservationPeriods = sumMinCellCount(subset$outcomeObservationPeriods, 0),
+      observedDays = sumMinCellCount(subset$observedDays, 0),
+      covariateSubjects = sumMinCellCount(subset$covariateSubjects, minCellCount),
+      covariateDays = sumMinCellCount(subset$covariateDays, minCellCount),
+      covariateEras = sumMinCellCount(subset$covariateEras, minCellCount),
+      covariateOutcomes = sumMinCellCount(subset$covariateOutcomes, minCellCount)
     )
   } else {
     stop(sprintf("Aggregating counts not implemented for source method '%s'", analysisSettings$evidenceSynthesisSource$sourceMethod))
@@ -395,37 +414,21 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
     estimates$seLogRr[idx] <- NA
     estimates$p[idx] <- NA
 
-    # Temp hack: CIs are stored as varcar, should be numeric
-    estimates$ci95Lb <- as.numeric(estimates$ci95Lb)
-    estimates$ci95Ub <- as.numeric(estimates$ci95Ub)
-
     if (evidenceSynthesisSource$likelihoodApproximation == "normal") {
       llApproximations <- estimates %>%
         select(
-          .data$targetId,
-          .data$comparatorId,
-          .data$outcomeId,
-          .data$analysisId,
-          .data$databaseId,
-          .data$logRr,
-          .data$seLogRr
+          "targetId",
+          "comparatorId",
+          "outcomeId",
+          "analysisId",
+          "databaseId",
+          "logRr",
+          "seLogRr"
         )
     } else if (evidenceSynthesisSource$likelihoodApproximation == "adaptive grid") {
       sql <- "SELECT cm_likelihood_profile.*
       FROM @database_schema.cm_likelihood_profile
-      INNER JOIN @database_schema.cm_target_comparator_outcome
-        ON cm_likelihood_profile.target_id = cm_target_comparator_outcome.target_id
-          AND cm_likelihood_profile.comparator_id = cm_target_comparator_outcome.comparator_id
-          AND cm_likelihood_profile.outcome_id = cm_target_comparator_outcome.outcome_id
-      LEFT JOIN (
-        @unblinded
-      ) unblinded
-      ON cm_likelihood_profile.target_id = unblinded.target_id
-        AND cm_likelihood_profile.comparator_id = unblinded.comparator_id
-        AND cm_likelihood_profile.outcome_id = unblinded.outcome_id
-        AND cm_likelihood_profile.analysis_id = unblinded.analysis_id
-        AND cm_likelihood_profile.database_id = unblinded.database_id
-        WHERE log_likelihood IS NOT NULL
+      WHERE log_likelihood IS NOT NULL
       {@database_ids != ''} ? {  AND cm_likelihood_profile.database_id IN (@database_ids)}
       {@analysis_ids != ''} ? {  AND cm_likelihood_profile.analysis_id IN (@analysis_ids)};
       "
@@ -433,7 +436,6 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
         connection = connection,
         sql = sql,
         database_schema = databaseSchema,
-        unblinded = unblinded,
         database_ids = if (is.null(databaseIds)) "" else databaseIds,
         analysis_ids = if (is.null(analysisIds)) "" else analysisIds,
         snakeCaseToCamelCase = TRUE
@@ -443,6 +445,119 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
     }
     sql <- "SELECT *
       FROM @database_schema.cm_target_comparator_outcome;
+    "
+    trueEffectSizes <- DatabaseConnector::renderTranslateQuerySql(
+      connection = connection,
+      sql = sql,
+      database_schema = databaseSchema,
+      snakeCaseToCamelCase = TRUE
+    )
+    trueEffectSizes <- trueEffectSizes %>%
+      mutate(trueEffectSize = ifelse (!is.na(.data$trueEffectSize) & .data$trueEffectSize == 0,
+                                      NA,
+                                      .data$trueEffectSize))
+  } else if (evidenceSynthesisSource$sourceMethod == "SelfControlledCaseSeries") {
+    key <- c("exposuresOutcomeSetId", "covariateId")
+    databaseIds <- evidenceSynthesisSource$databaseIds
+    analysisIds <- evidenceSynthesisSource$analysisIds
+    unblinded <- "SELECT exposures_outcome_set_id,
+      covariate_id,
+      analysis_id,
+      database_id
+    FROM @database_schema.sccs_diagnostics_summary
+    WHERE unblind = 1"
+    unblinded <- SqlRender::render(
+      sql = unblinded,
+      database_schema = databaseSchema
+    )
+
+    sql <- "SELECT sccs_result.*
+      FROM @database_schema.sccs_result
+      INNER JOIN @database_schema.sccs_covariate
+        ON sccs_result.database_id = sccs_covariate.database_id
+          AND sccs_result.exposures_outcome_set_id = sccs_covariate.exposures_outcome_set_id
+          AND sccs_result.covariate_id = sccs_covariate.covariate_id
+          AND sccs_result.analysis_id = sccs_covariate.analysis_id
+      INNER JOIN @database_schema.sccs_exposure
+        ON sccs_result.exposures_outcome_set_id = sccs_exposure.exposures_outcome_set_id
+          AND sccs_covariate.era_id = sccs_covariate.era_id
+      LEFT JOIN (
+        @unblinded
+      ) unblinded
+      ON sccs_result.exposures_outcome_set_id = unblinded.exposures_outcome_set_id
+        AND sccs_result.covariate_id = unblinded.covariate_id
+        AND sccs_result.analysis_id = unblinded.analysis_id
+        AND sccs_result.database_id = unblinded.database_id
+      WHERE (true_effect_size IS NOT NULL OR unblinded.exposures_outcome_set_id IS NOT NULL)
+      {@database_ids != ''} ? {  AND sccs_result.database_id IN (@database_ids)}
+      {@analysis_ids != ''} ? {  AND sccs_result.analysis_id IN (@analysis_ids)};
+      "
+    estimates <- DatabaseConnector::renderTranslateQuerySql(
+      connection = connection,
+      sql = sql,
+      database_schema = databaseSchema,
+      unblinded = unblinded,
+      database_ids = if (is.null(databaseIds)) "" else databaseIds,
+      analysis_ids = if (is.null(analysisIds)) "" else analysisIds,
+      snakeCaseToCamelCase = TRUE
+    ) %>%
+      as_tibble()
+
+    # Temp hack: detect NA values that have been converted to 0 in the DB:
+    idx <- estimates$seLogRr == 0
+    estimates$logRr[idx] <- NA
+    estimates$seLogRr[idx] <- NA
+    estimates$p[idx] <- NA
+
+    if (evidenceSynthesisSource$likelihoodApproximation == "normal") {
+      llApproximations <- estimates %>%
+        select(
+          "exposuresOutcomeSetId",
+          "covariateId",
+          "analysisId",
+          "databaseId",
+          "logRr",
+          "seLogRr"
+        )
+    } else if (evidenceSynthesisSource$likelihoodApproximation == "adaptive grid") {
+      sql <- "SELECT sccs_likelihood_profile.*
+      FROM @database_schema.sccs_likelihood_profile
+      WHERE log_likelihood IS NOT NULL
+      {@database_ids != ''} ? {  AND sccs_likelihood_profile.database_id IN (@database_ids)}
+      {@analysis_ids != ''} ? {  AND sccs_likelihood_profile.analysis_id IN (@analysis_ids)};
+      "
+      llApproximations <- DatabaseConnector::renderTranslateQuerySql(
+        connection = connection,
+        sql = sql,
+        database_schema = databaseSchema,
+        database_ids = if (is.null(databaseIds)) "" else databaseIds,
+        analysis_ids = if (is.null(analysisIds)) "" else analysisIds,
+        snakeCaseToCamelCase = TRUE
+      ) %>%
+        inner_join(estimates %>%
+                     select(
+                       "exposuresOutcomeSetId",
+                       "covariateId",
+                       "analysisId",
+                       "databaseId",
+                     ),
+                   by = c("exposuresOutcomeSetId", "covariateId", "analysisId", "databaseId")
+        )
+    } else {
+      stop(sprintf("Unknown likelihood approximation '%s'.", evidenceSynthesisSource$likelihoodApproximation))
+    }
+    sql <- "SELECT DISTINCT sccs_covariate.analysis_id,
+            sccs_covariate.exposures_outcome_set_id,
+            sccs_covariate.covariate_id,
+            true_effect_size
+          FROM @database_schema.sccs_exposure
+          INNER JOIN @database_schema.sccs_covariate
+            ON sccs_exposure.exposure_id = sccs_covariate.era_id
+              AND sccs_exposure.exposures_outcome_set_id = sccs_covariate.exposures_outcome_set_id
+          INNER JOIN @database_schema.sccs_covariate_analysis
+            ON sccs_covariate.analysis_id = sccs_covariate_analysis.analysis_id
+              AND sccs_covariate.covariate_analysis_id = sccs_covariate_analysis.covariate_analysis_id
+          WHERE sccs_covariate_analysis.variable_of_interest = 1;
     "
     trueEffectSizes <- DatabaseConnector::renderTranslateQuerySql(
       connection = connection,
@@ -466,6 +581,9 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
 }
 
 writeToCsv <- function(data, fileName, append) {
+  tableName <- gsub(".csv$", "", basename(fileName))
+  names <- colnames(createEmptyResult(tableName))
+  data <- data[, names]
   data <- SqlRender::camelCaseToSnakeCaseNames(data)
   readr::write_csv(data, fileName, append = append)
 }

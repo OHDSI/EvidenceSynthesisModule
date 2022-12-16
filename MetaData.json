@@ -1,6 +1,6 @@
 {
   "Name": "EvidenceSynthesisModule",
-  "Version": "0.0.4",
+  "Version": "0.1.0",
   "Dependencies": [],
   "TablePrefix": "es_"
 }

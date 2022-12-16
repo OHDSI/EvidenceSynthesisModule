@@ -38,6 +38,7 @@
           "priorSd": [2, 0.5],
           "alpha": 0.05,
           "seed": 1,
+          "robust": false,
           "evidenceSynthesisAnalysisId": 3,
           "evidenceSynthesisDescription": "Bayesian random-effects",
           "evidenceSynthesisSource": {
@@ -47,10 +48,56 @@
           },
           "controlType": "outcome",
           "attr_class": ["BayesianMetaAnalysis", "EvidenceSynthesisAnalysis"]
+        },
+        {
+          "alpha": 0.05,
+          "evidenceSynthesisAnalysisId": 4,
+          "evidenceSynthesisDescription": "Fixed-effects",
+          "evidenceSynthesisSource": {
+            "sourceMethod": "SelfControlledCaseSeries",
+            "databaseIds": [1, 2, 4],
+            "analysisIds": [1, 3],
+            "likelihoodApproximation": "normal",
+            "attr_class": "EvidenceSynthesisSource"
+          },
+          "controlType": "outcome",
+          "attr_class": ["FixedEffectsMetaAnalysis", "EvidenceSynthesisAnalysis"]
+        },
+        {
+          "alpha": 0.05,
+          "evidenceSynthesisAnalysisId": 5,
+          "evidenceSynthesisDescription": "Random-effects",
+          "evidenceSynthesisSource": {
+            "sourceMethod": "SelfControlledCaseSeries",
+            "databaseIds": [1, 2, 4],
+            "analysisIds": [1, 3],
+            "likelihoodApproximation": "normal",
+            "attr_class": "EvidenceSynthesisSource"
+          },
+          "controlType": "outcome",
+          "attr_class": ["RandomEffectsMetaAnalysis", "EvidenceSynthesisAnalysis"]
+        },
+        {
+          "chainLength": 1100000,
+          "burnIn": 100000,
+          "subSampleFrequency": 100,
+          "priorSd": [2, 0.5],
+          "alpha": 0.05,
+          "seed": 1,
+          "robust": false,
+          "evidenceSynthesisAnalysisId": 6,
+          "evidenceSynthesisDescription": "Bayesian random-effects",
+          "evidenceSynthesisSource": {
+            "sourceMethod": "SelfControlledCaseSeries",
+            "likelihoodApproximation": "adaptive grid",
+            "attr_class": "EvidenceSynthesisSource"
+          },
+          "controlType": "outcome",
+          "attr_class": ["BayesianMetaAnalysis", "EvidenceSynthesisAnalysis"]
         }
       ],
       "module": "EvidenceSynthesisModule",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "remoteRepo": "github.com",
       "remoteUsername": "ohdsi",
       "attr_class": ["EvidenceSynthesisModuleSpecifications", "ModuleSpecifications"]

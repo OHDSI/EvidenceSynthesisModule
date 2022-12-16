@@ -12,34 +12,61 @@ getModuleInfo <- function() {
 
 # Create EvidenceSynthesisModule settings ---------------------------------------
 
-evidenceSynthesisSource1 <- createEvidenceSynthesisSource(
+evidenceSynthesisSourceCmGrid <- createEvidenceSynthesisSource(
   sourceMethod = "CohortMethod",
   likelihoodApproximation = "adaptive grid"
 )
 
-evidenceSynthesisSource2 <- createEvidenceSynthesisSource(
+evidenceSynthesisSourceCmNormal <- createEvidenceSynthesisSource(
   sourceMethod = "CohortMethod",
   databaseIds = c(1,2,4),
   analysisIds = c(1,3),
   likelihoodApproximation = "normal"
 )
 
-fixedEffectsMetaAnalysis <- createFixedEffectsMetaAnalysis(
+evidenceSynthesisSourceSccsGrid <- createEvidenceSynthesisSource(
+  sourceMethod = "SelfControlledCaseSeries",
+  likelihoodApproximation = "adaptive grid"
+)
+
+evidenceSynthesisSourceSccsNormal <- createEvidenceSynthesisSource(
+  sourceMethod = "SelfControlledCaseSeries",
+  databaseIds = c(1,2,4),
+  analysisIds = c(1,3),
+  likelihoodApproximation = "normal"
+)
+
+fixedEffectsMetaAnalysisCm <- createFixedEffectsMetaAnalysis(
   evidenceSynthesisAnalysisId = 1,
-  evidenceSynthesisSource = evidenceSynthesisSource2)
+  evidenceSynthesisSource = evidenceSynthesisSourceCmNormal)
 
-randomEffectsMetaAnalysis <- createRandomEffectsMetaAnalysis(
+randomEffectsMetaAnalysisCm <- createRandomEffectsMetaAnalysis(
   evidenceSynthesisAnalysisId = 2,
-  evidenceSynthesisSource = evidenceSynthesisSource2)
+  evidenceSynthesisSource = evidenceSynthesisSourceCmNormal)
 
-bayesianMetaAnalysis <- createBayesianMetaAnalysis(
+bayesianMetaAnalysisCm <- createBayesianMetaAnalysis(
   evidenceSynthesisAnalysisId = 3,
-  evidenceSynthesisSource = evidenceSynthesisSource1)
+  evidenceSynthesisSource = evidenceSynthesisSourceCmGrid)
+
+fixedEffectsMetaAnalysisSccs <- createFixedEffectsMetaAnalysis(
+  evidenceSynthesisAnalysisId = 4,
+  evidenceSynthesisSource = evidenceSynthesisSourceSccsNormal)
+
+randomEffectsMetaAnalysisSccs <- createRandomEffectsMetaAnalysis(
+  evidenceSynthesisAnalysisId = 5,
+  evidenceSynthesisSource = evidenceSynthesisSourceSccsNormal)
+
+bayesianMetaAnalysisSccs <- createBayesianMetaAnalysis(
+  evidenceSynthesisAnalysisId = 6,
+  evidenceSynthesisSource = evidenceSynthesisSourceSccsGrid)
 
 evidenceSynthesisModuleSpecs <- createEvidenceSynthesisModuleSpecifications(
-  evidenceSynthesisAnalysisList = list(fixedEffectsMetaAnalysis,
-                                       randomEffectsMetaAnalysis,
-                                       bayesianMetaAnalysis))
+  evidenceSynthesisAnalysisList = list(fixedEffectsMetaAnalysisCm,
+                                       randomEffectsMetaAnalysisCm,
+                                       bayesianMetaAnalysisCm,
+                                       fixedEffectsMetaAnalysisSccs,
+                                       randomEffectsMetaAnalysisSccs,
+                                       bayesianMetaAnalysisSccs))
 
 # Module Settings Spec ----------------------------
 analysisSpecifications <- createEmptyAnalysisSpecificiations() %>%

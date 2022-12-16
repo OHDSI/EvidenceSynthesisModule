@@ -1,3 +1,10 @@
+EvidenceSynthesisModule 0.1.0
+=============================
+
+Changes
+
+1. Adding synthesis of SCCS results.
+
 EvidenceSynthesisModule 0.0.4
 =============================
 
