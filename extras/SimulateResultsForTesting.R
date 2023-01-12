@@ -75,7 +75,7 @@ for (outcomeId in 1:26) {
 
   sccsExposure <- tibble(
     exposuresOutcomeSetId = outcomeId,
-    exposureId = !!exposureId,
+    eraId = !!exposureId,
     trueEffectSize = ifelse(trueEffectSize == 1, 1, NA),
   )
   DatabaseConnector::insertTable(

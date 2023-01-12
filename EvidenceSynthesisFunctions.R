@@ -402,7 +402,7 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
       sql = sql,
       database_schema = databaseSchema,
       unblinded = unblinded,
-      database_ids = if (is.null(databaseIds)) "" else databaseIds,
+      database_ids = if (is.null(databaseIds)) "" else quoteSql(databaseIds),
       analysis_ids = if (is.null(analysisIds)) "" else analysisIds,
       snakeCaseToCamelCase = TRUE
     ) %>%
@@ -436,7 +436,7 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
         connection = connection,
         sql = sql,
         database_schema = databaseSchema,
-        database_ids = if (is.null(databaseIds)) "" else databaseIds,
+        database_ids = if (is.null(databaseIds)) "" else quoteSql(databaseIds),
         analysis_ids = if (is.null(analysisIds)) "" else analysisIds,
         snakeCaseToCamelCase = TRUE
       )
@@ -497,7 +497,7 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
       sql = sql,
       database_schema = databaseSchema,
       unblinded = unblinded,
-      database_ids = if (is.null(databaseIds)) "" else databaseIds,
+      database_ids = if (is.null(databaseIds)) "" else quoteSql(databaseIds),
       analysis_ids = if (is.null(analysisIds)) "" else analysisIds,
       snakeCaseToCamelCase = TRUE
     ) %>%
@@ -530,7 +530,7 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
         connection = connection,
         sql = sql,
         database_schema = databaseSchema,
-        database_ids = if (is.null(databaseIds)) "" else databaseIds,
+        database_ids = if (is.null(databaseIds)) "" else quoteSql(databaseIds),
         analysis_ids = if (is.null(analysisIds)) "" else analysisIds,
         snakeCaseToCamelCase = TRUE
       ) %>%
@@ -552,7 +552,7 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
             true_effect_size
           FROM @database_schema.sccs_exposure
           INNER JOIN @database_schema.sccs_covariate
-            ON sccs_exposure.exposure_id = sccs_covariate.era_id
+            ON sccs_exposure.era_id = sccs_covariate.era_id
               AND sccs_exposure.exposures_outcome_set_id = sccs_covariate.exposures_outcome_set_id
           INNER JOIN @database_schema.sccs_covariate_analysis
             ON sccs_covariate.analysis_id = sccs_covariate_analysis.analysis_id
@@ -601,4 +601,8 @@ createEmptyResult <- function(tableName = "") {
   result <- as_tibble(t(result), name_repair = "check_unique")
   result <- result[FALSE, ]
   return(result)
+}
+
+quoteSql <- function(values) {
+  return(paste0("'", paste(values, collapse = "', '"), "'"))
 }

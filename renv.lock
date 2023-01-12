@@ -661,9 +661,9 @@
 			"RemoteUsername" : "ohdsi",
 			"RemoteRef" : "v0.7.0"
 		},
-			"EvidenceSynthesis" : {
+		"EvidenceSynthesis" : {
 			"Package" : "EvidenceSynthesis",
-			"Version" : "0.3.0",
+			"Version" : "0.4.0",
 			"Source" : "Repository",
 			"Repository" : "CRAN"
 		}
