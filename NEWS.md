@@ -1,3 +1,10 @@
+EvidenceSynthesisModule 0.1.1
+=============================
+
+Bugfixes
+
+1. Added missing `renv/settings.dcf` file.
+
 EvidenceSynthesisModule 0.1.0
 =============================
 
