@@ -1,3 +1,10 @@
+EvidenceSynthesisModule 0.1.2
+=============================
+
+Bugfixes
+
+1. Added missing `resultsFolder` argument to private function.
+
 EvidenceSynthesisModule 0.1.1
 =============================
 
