@@ -1,3 +1,11 @@
+EvidenceSynthesisModule 0.1.3
+=============================
+
+Bugfixes
+
+1. Extend size of `es_analysis.source_method` in results data model specification
+
+
 EvidenceSynthesisModule 0.1.2
 =============================
 
