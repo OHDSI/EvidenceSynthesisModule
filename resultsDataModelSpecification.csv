@@ -1,7 +1,7 @@
 table_name,column_name,data_type,is_required,primary_key,min_cell_count,description
 es_analysis,evidence_synthesis_analysis_id,int,Yes,Yes,No,A unique identifier for the evidence synthesis analysis.
 es_analysis,evidence_synthesis_description,varchar(255),Yes,No,No,A description of the evidence synthesis analysis.
-es_analysis,source_method,varchar(12),Yes,No,No,The method used to produce the source estimates (e.g. 'CohortMethod').
+es_analysis,source_method,varchar(100),Yes,No,No,The method used to produce the source estimates (e.g. 'CohortMethod').
 es_analysis,definition,varchar,Yes,No,No,A JSON string representing the settings of the evidence synthesis analysis.
 es_cm_diagnostics_summary,target_id,int,Yes,Yes,No,The identifier for the target cohort.
 es_cm_diagnostics_summary,comparator_id,int,Yes,Yes,No,The identifier for the comparator cohort.
