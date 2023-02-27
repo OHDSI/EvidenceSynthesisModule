@@ -35,7 +35,7 @@ writeAnalysisSpecs <- function(analysisSpecs, resultsFolder) {
   CohortGenerator::writeCsv(evidenceSynthesisAnalysis, fileName)
 }
 
-ensureEmptyAndExists <- function(outputTable) {
+ensureEmptyAndExists <- function(outputTable,resultsFolder) {
   diagnostics <- createEmptyResult(outputTable)
   fileName <- file.path(resultsFolder, paste0(outputTable, ".csv"))
   writeToCsv(data = diagnostics, fileName = fileName, append = FALSE)
@@ -49,7 +49,7 @@ executeEvidenceSynthesis <- function(connectionDetails, databaseSchema, settings
                     "es_cm_diagnostics_summary",
                     "es_sccs_result",
                     "es_sccs_diagnostics_summary")
-  invisible(lapply(outputTables, ensureEmptyAndExists))
+  invisible(lapply(outputTables, function(x){ensureEmptyAndExists(x, resultsFolder)} ))
 
   message("Performing evidence synthesis across databases")
   invisible(lapply(
