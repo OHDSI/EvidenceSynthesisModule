@@ -70,7 +70,7 @@ createEvidenceSynthesisModuleSpecifications <- function(evidenceSynthesisAnalysi
   checkmate::reportAssertions(collection = errorMessages)
   specifications <- list(settings = evidenceSynthesisAnalysisList,
                          module = "EvidenceSynthesisModule",
-                         version = "0.1.3",
+                         version = "0.2.0",
                          remoteRepo = "github.com",
                          remoteUsername = "ohdsi")
   class(specifications) <- c("EvidenceSynthesisModuleSpecifications", "ModuleSpecifications")
@@ -142,8 +142,9 @@ createFixedEffectsMetaAnalysis <- function(alpha = 0.05,
 #' @param subSampleFrequency  Subsample frequency for the MCMC. 
 #' @param priorSd  A two-dimensional vector with the standard deviation of the prior for mu and tau, respectively. 
 #' @param alpha  The alpha (expected type I error) used for the credible intervals. 
+#' @param robust  Whether or not to use a t-distribution model; default: FALSE. 
+#' @param df  Degrees of freedom for the t-model, only used if robust is TRUE. 
 #' @param seed  The seed for the random number generator. 
-#' @param robust  Whether or not to use a t-distribution model (default: FALSE) 
 #' @param evidenceSynthesisAnalysisId 
 #' @param evidenceSynthesisDescription 
 #' @param evidenceSynthesisSource 
@@ -155,8 +156,9 @@ createBayesianMetaAnalysis <- function(chainLength = 1100000,
                                        subSampleFrequency = 100,
                                        priorSd = c(2, 0.5),
                                        alpha = 0.05,
-                                       seed = 1,
                                        robust = FALSE,
+                                       df = 4,
+                                       seed = 1,
                                        evidenceSynthesisAnalysisId = 1,
                                        evidenceSynthesisDescription = "Bayesian random-effects",
                                        evidenceSynthesisSource = NULL,
