@@ -439,7 +439,17 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
         database_ids = if (is.null(databaseIds)) "" else quoteSql(databaseIds),
         analysis_ids = if (is.null(analysisIds)) "" else analysisIds,
         snakeCaseToCamelCase = TRUE
-      )
+      )  %>%
+        inner_join(estimates %>%
+                     select(
+                       "targetId",
+                       "comparatorId",
+                       "outcomeId",
+                       "analysisId",
+                       "databaseId",
+                     ),
+                   by = c("targetId", "comparatorId", "outcomeId", "analysisId", "databaseId")
+        )
     } else {
       stop(sprintf("Unknown likelihood approximation '%s'.", evidenceSynthesisSource$likelihoodApproximation))
     }

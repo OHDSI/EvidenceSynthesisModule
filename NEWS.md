@@ -1,3 +1,11 @@
+EvidenceSynthesisModule 0.2.1
+=============================
+
+Bugfixes
+
+1. Fixed issue where blinded results would still be included in meta-analysis for cohort method when using adaptive grid approximation.
+
+
 EvidenceSynthesisModule 0.2.0
 =============================
 
