@@ -1,3 +1,9 @@
+EvidenceSynthesisModule 0.3.0
+=============================
+
+1. Adding one-sided (calibrated) p-values.
+
+
 EvidenceSynthesisModule 0.2.1
 =============================
 

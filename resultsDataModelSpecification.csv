@@ -24,6 +24,7 @@ es_cm_result,rr,float,No,No,No,The estimated relative risk (e.g. the hazard rati
 es_cm_result,ci_95_lb,float,No,No,No,The lower bound of the 95% confidence interval of the relative risk.
 es_cm_result,ci_95_ub,float,No,No,No,The upper bound of the 95% confidence interval of the relative risk.
 es_cm_result,p,float,No,No,No,The two-sided p-value considering the null hypothesis of no effect.
+es_cm_result,one_sided_p,float,No,No,No,The one-sided p-value considering the null hypothesis of RR <= 1.
 es_cm_result,log_rr,float,No,No,No,The log of the relative risk.
 es_cm_result,se_log_rr,float,No,No,No,The standard error of the log of the relative risk.
 es_cm_result,target_subjects,int,No,No,Yes,The number of subject in the target cohort.
@@ -37,6 +38,7 @@ es_cm_result,calibrated_rr,float,No,No,No,The calibrated relative risk.
 es_cm_result,calibrated_ci_95_lb,float,No,No,No,The lower bound of the calibrated 95% confidence interval of the relative risk.
 es_cm_result,calibrated_ci_95_ub,float,No,No,No,The upper bound of the calibrated 95% confidence interval of the relative risk.
 es_cm_result,calibrated_p,float,No,No,No,The calibrated two-sided p-value.
+es_cm_result,calibrated_one_sided_p,float,No,No,No,The calibrated one-sided p-value considering the null hypothesis of RR <= 1.
 es_cm_result,calibrated_log_rr,float,No,No,No,The log of the calibrated relative risk.
 es_cm_result,calibrated_se_log_rr,float,No,No,No,The standard error of the log of the calibrated relative risk.
 es_sccs_diagnostics_summary,exposures_outcome_set_id,int,Yes,Yes,No,A foreign key referencing the sccs_exposures_outcome_set table.
@@ -58,6 +60,7 @@ es_sccs_result,rr,float,No,No,No,The estimated relative risk (i.e. the incidence
 es_sccs_result,ci_95_lb,float,No,No,No,The lower bound of the 95% confidence interval of the relative risk.
 es_sccs_result,ci_95_ub,float,No,No,No,The upper bound of the 95% confidence interval of the relative risk.
 es_sccs_result,p,float,No,No,No,The two-sided p-value considering the null hypothesis of no effect.
+es_sccs_result,one_sided_p,float,No,No,No,The one-sided p-value considering the null hypothesis of RR <= 1.
 es_sccs_result,outcome_subjects,int,Yes,No,Yes,The number of subjects with at least one outcome.
 es_sccs_result,outcome_events,int,Yes,No,Yes,The number of outcome events.
 es_sccs_result,outcome_observation_periods,int,Yes,No,Yes,The number of observation periods containing at least one outcome.
@@ -73,5 +76,6 @@ es_sccs_result,calibrated_rr,float,No,No,No,The calibrated relative risk.
 es_sccs_result,calibrated_ci_95_lb,float,No,No,No,The lower bound of the calibrated 95% confidence interval of the relative risk.
 es_sccs_result,calibrated_ci_95_ub,float,No,No,No,The upper bound of the calibrated 95% confidence interval of the relative risk.
 es_sccs_result,calibrated_p,float,No,No,No,The calibrated two-sided p-value.
+es_sccs_result,calibrated_one_sided_p,float,No,No,No,The calibrated one-sided p-value considering the null hypothesis of RR <= 1.
 es_sccs_result,calibrated_log_rr,float,No,No,No,The log of the calibrated relative risk.
 es_sccs_result,calibrated_se_log_rr,float,No,No,No,The standard error of the log of the calibrated relative risk.

@@ -175,7 +175,15 @@ calibrateEstimates <- function(group) {
   if (nrow(ncs) >= 5) {
     null <- EmpiricalCalibration::fitMcmcNull(logRr = ncs$logRr, seLogRr = ncs$seLogRr)
     ease <- EmpiricalCalibration::computeExpectedAbsoluteSystematicError(null)
-    calibratedP <- EmpiricalCalibration::calibrateP(null = null, logRr = group$logRr, seLogRr = group$seLogRr)
+    calibratedP <- EmpiricalCalibration::calibrateP(null = null,
+                                                    logRr = group$logRr,
+                                                    seLogRr = group$seLogRr,
+                                                    twoSided = TRUE)
+    calibratedOneSidedP <- EmpiricalCalibration::calibrateP(null = null,
+                                                            logRr = group$logRr,
+                                                            seLogRr = group$seLogRr,
+                                                            twoSided = FALSE,
+                                                            upper = TRUE)
     if (nrow(pcs) >= 5) {
       model <- EmpiricalCalibration::fitSystematicErrorModel(
         logRr = c(ncs$logRr, pcs$logRr),
@@ -191,6 +199,7 @@ calibrateEstimates <- function(group) {
     group$calibratedCi95Lb <- exp(calibratedCi$logLb95Rr)
     group$calibratedCi95Ub <- exp(calibratedCi$logUb95Rr)
     group$calibratedP <- calibratedP$p
+    group$calibratedOneSidedP <- calibratedOneSidedP$p
     group$calibratedLogRr <- calibratedCi$logRr
     group$calibratedSeLogRr <- calibratedCi$seLogRr
     group$ease <- ease$ease
@@ -199,6 +208,7 @@ calibrateEstimates <- function(group) {
     group$calibratedCi95Lb <- NA
     group$calibratedCi95Ub <- NA
     group$calibratedP <- NA
+    group$calibratedOneSidedP <- NA
     group$calibratedLogRr <- NA
     group$calibratedSeLogRr <- NA
     group$ease <- NA
@@ -282,6 +292,7 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
       ci95Lb = as.numeric(NA),
       ci95Ub = as.numeric(NA),
       p = as.numeric(NA),
+      oneSidedP = as.numeric(NA),
       logRr = as.numeric(NA),
       seLogRr = as.numeric(NA),
       i2 = as.numeric(NA),
@@ -293,6 +304,7 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
       ci95Lb = subset$ci95Lb,
       ci95Ub = subset$ci95Ub,
       p = subset$p,
+      oneSidedP = if ("oneSidedP" %in% colnames(subset)) subset$oneSidedP else NA,
       logRr = subset$logRr,
       seLogRr = subset$seLogRr,
       i2 = NA,
@@ -307,15 +319,21 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
       args$controlType <- NULL
       args$data <- as.data.frame(llApproximations)
       estimate <- do.call(EvidenceSynthesis::computeFixedEffectMetaAnalysis, args)
-      z <- estimate$logRr / estimate$seLogRr
-      p <- 2 * pmin(pnorm(z), 1 - pnorm(z))
+      p <- EmpiricalCalibration::computeTraditionalP(logRr = estimate$logRr,
+                                                     seLogRr = estimate$seLogRr,
+                                                     twoSided = TRUE)
+      oneSidedP <- EmpiricalCalibration::computeTraditionalP(logRr = estimate$logRr,
+                                                             seLogRr = estimate$seLogRr,
+                                                             twoSided = FALSE,
+                                                             upper = TRUE)
       estimate <- estimate %>%
         as_tibble() %>%
         rename(ci95Lb = lb,
                ci95Ub = ub) %>%
         mutate(i2 = NA,
                tau = NA,
-               p = !!p)
+               p = !!p,
+               oneSidedP = !!oneSidedP)
     } else if (is(analysisSettings, "RandomEffectsMetaAnalysis")) {
       m <- meta::metagen(TE = llApproximations$logRr,
                          seTE = llApproximations$seLogRr,
@@ -325,11 +343,16 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
                          sm = "RR",
                          level.comb = 1 - analysisSettings$alpha)
       rfx <- summary(m)$random
+      oneSidedP <- EmpiricalCalibration::computeTraditionalP(logRr = rfx$TE,
+                                                             seLogRr = rfx$seTE,
+                                                             twoSided = FALSE,
+                                                             upper = TRUE)
       estimate <- tibble(
         rr = exp(rfx$TE),
         ci95Lb = exp(rfx$lower),
         ci95Ub = exp(rfx$upper),
         p = rfx$p,
+        oneSidedP = !!oneSidedP,
         logRr = rfx$TE,
         seLogRr = rfx$seTE,
         i2 = m$I2,
@@ -343,14 +366,20 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
       args$controlType <- NULL
       args$data <- llApproximations
       estimate <- do.call(EvidenceSynthesis::computeBayesianMetaAnalysis, args)
-      z <- estimate$logRr / estimate$seLogRr
-      p <- 2 * pmin(pnorm(z), 1 - pnorm(z))
+      p <- EmpiricalCalibration::computeTraditionalP(logRr = estimate$logRr,
+                                                     seLogRr = estimate$seLogRr,
+                                                     twoSided = TRUE)
+      oneSidedP <- EmpiricalCalibration::computeTraditionalP(logRr = estimate$logRr,
+                                                             seLogRr = estimate$seLogRr,
+                                                             twoSided = FALSE,
+                                                             upper = TRUE)
       estimate <- estimate %>%
         as_tibble() %>%
         transmute(rr = exp(.data$mu),
                   ci95Lb = exp(.data$mu95Lb),
                   ci95Ub = exp(.data$mu95Ub),
                   p = !!p,
+                  oneSidedP = !!oneSidedP,
                   logRr = .data$mu,
                   seLogRr = .data$muSe,
                   tau = .data$tau,
