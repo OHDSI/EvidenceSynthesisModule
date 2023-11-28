@@ -1,3 +1,13 @@
+EvidenceSynthesisModule 0.4.0
+=============================
+
+1. Include diagnostics and estimates for analyses that are blinded for all databases.
+
+2. Respect unblind decisions for negative controls.
+
+3. Use new `unblind_for_evidence_synthesis` column in diagnostics summary tables (when present).
+
+
 EvidenceSynthesisModule 0.3.0
 =============================
 

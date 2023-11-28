@@ -57,17 +57,14 @@ test_that("Include only allowed CM estimates in meta-analysis", {
   connection <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
 
-  # Determine if unblinded or not outcome_of_interest:
+  # Determine if unblinded:
   sql <- "
     SELECT cm_target_comparator_outcome.target_id,
       cm_target_comparator_outcome.comparator_id,
       cm_target_comparator_outcome.outcome_id,
       analysis_id,
       database_id,
-      CASE
-        WHEN outcome_of_interest = 0 THEN 1
-        ELSE unblind
-      END AS include_1
+      unblind AS include_1
     FROM main.cm_target_comparator_outcome
     LEFT JOIN main.cm_diagnostics_summary
       ON cm_diagnostics_summary.target_id = cm_target_comparator_outcome.target_id
@@ -150,10 +147,7 @@ test_that("Include only allowed SCCS estimates in meta-analysis", {
       sccs_diagnostics_summary.covariate_id,
       sccs_diagnostics_summary.analysis_id,
       sccs_diagnostics_summary.database_id,
-      CASE
-        WHEN true_effect_size IS NOT NULL THEN 1
-        ELSE unblind
-      END AS include_1
+      unblind AS include_1
     FROM main.sccs_exposure
     INNER JOIN main.sccs_diagnostics_summary
       ON sccs_exposure.exposures_outcome_set_id = sccs_diagnostics_summary.exposures_outcome_set_id

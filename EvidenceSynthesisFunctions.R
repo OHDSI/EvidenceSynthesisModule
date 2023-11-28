@@ -391,46 +391,55 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
   return(estimate)
 }
 
+hasUnblindForEvidenceSynthesisColumn <- function(connection, databaseSchema, table) {
+  row <- DatabaseConnector::renderTranslateQuerySql(
+    connection = connection,
+    sql = "SELECT TOP 1 * FROM @database_schema.@table;",
+    database_schema = databaseSchema,
+    table = table,
+    snakeCaseToCamelCase = TRUE
+  )
+  return("unlindForEvidenceSynthesis" %in% colnames(row))
+}
+
 getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesisSource) {
   if (evidenceSynthesisSource$sourceMethod == "CohortMethod") {
     key <- c("targetId", "comparatorId", "outcomeId")
     databaseIds <- evidenceSynthesisSource$databaseIds
     analysisIds <- evidenceSynthesisSource$analysisIds
-    unblinded <- "SELECT target_id,
-      comparator_id,
-      outcome_id,
-      analysis_id,
-      database_id
-    FROM @database_schema.cm_diagnostics_summary
-    WHERE unblind = 1"
-    unblinded <- SqlRender::render(
-      sql = unblinded,
-      database_schema = databaseSchema
-    )
-
-    sql <- "SELECT cm_result.*
+    if (hasUnblindForEvidenceSynthesisColumn(connection, databaseSchema, "cm_diagnostics_summary")) {
+      unblindColumn <- "unblind_for_evidence_synthesis"
+    } else {
+      unblindColumn <- "unblind"
+    }
+    # For backwards compatibility, when CohortMethod did not generate diagnostics
+    # for negative controls: if negative control (outcome_of_interest = 0) then
+    # still unblind.
+    sql <- "SELECT cm_result.*,
+        CASE
+          WHEN @unblind_column IS NULL THEN 1 - outcome_of_interest
+          ELSE @unblind_column
+        END AS unblind
       FROM @database_schema.cm_result
       INNER JOIN @database_schema.cm_target_comparator_outcome
         ON cm_result.target_id = cm_target_comparator_outcome.target_id
           AND cm_result.comparator_id = cm_target_comparator_outcome.comparator_id
           AND cm_result.outcome_id = cm_target_comparator_outcome.outcome_id
-      LEFT JOIN (
-        @unblinded
-      ) unblinded
-      ON cm_result.target_id = unblinded.target_id
-        AND cm_result.comparator_id = unblinded.comparator_id
-        AND cm_result.outcome_id = unblinded.outcome_id
-        AND cm_result.analysis_id = unblinded.analysis_id
-        AND cm_result.database_id = unblinded.database_id
-      WHERE (outcome_of_interest = 0 OR unblinded.target_id IS NOT NULL)
-      {@database_ids != ''} ? {  AND cm_result.database_id IN (@database_ids)}
-      {@analysis_ids != ''} ? {  AND cm_result.analysis_id IN (@analysis_ids)};
+      LEFT JOIN @database_schema.cm_diagnostics_summary
+      ON cm_result.target_id = cm_diagnostics_summary.target_id
+        AND cm_result.comparator_id = cm_diagnostics_summary.comparator_id
+        AND cm_result.outcome_id = cm_diagnostics_summary.outcome_id
+        AND cm_result.analysis_id = cm_diagnostics_summary.analysis_id
+        AND cm_result.database_id = cm_diagnostics_summary.database_id
+      {@database_ids != ''| @analysis_ids != ''} ? {WHERE}
+      {@database_ids != ''} ? {  cm_result.database_id IN (@database_ids)}
+      {@analysis_ids != ''} ? {  {@database_ids != ''} ? {AND} cm_result.analysis_id IN (@analysis_ids)};
       "
     estimates <- DatabaseConnector::renderTranslateQuerySql(
       connection = connection,
       sql = sql,
       database_schema = databaseSchema,
-      unblinded = unblinded,
+      unblind_column = unblindColumn,
       database_ids = if (is.null(databaseIds)) "" else quoteSql(databaseIds),
       analysis_ids = if (is.null(analysisIds)) "" else analysisIds,
       snakeCaseToCamelCase = TRUE
@@ -445,6 +454,7 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
 
     if (evidenceSynthesisSource$likelihoodApproximation == "normal") {
       llApproximations <- estimates %>%
+        filter(.data$unblind == 1) %>%
         select(
           "targetId",
           "comparatorId",
@@ -470,6 +480,7 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
         snakeCaseToCamelCase = TRUE
       )  %>%
         inner_join(estimates %>%
+                     filter(.data$unblind == 1) %>%
                      select(
                        "targetId",
                        "comparatorId",
@@ -499,18 +510,16 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
     key <- c("exposuresOutcomeSetId", "covariateId")
     databaseIds <- evidenceSynthesisSource$databaseIds
     analysisIds <- evidenceSynthesisSource$analysisIds
-    unblinded <- "SELECT exposures_outcome_set_id,
-      covariate_id,
-      analysis_id,
-      database_id
-    FROM @database_schema.sccs_diagnostics_summary
-    WHERE unblind = 1"
-    unblinded <- SqlRender::render(
-      sql = unblinded,
-      database_schema = databaseSchema
-    )
-
-    sql <- "SELECT sccs_result.*
+    if (hasUnblindForEvidenceSynthesisColumn(connection, databaseSchema, "sccs_diagnostics_summary")) {
+      unblindColumn <- "unblind_for_evidence_synthesis"
+    } else {
+      unblindColumn <- "unblind"
+    }
+    sql <- "SELECT sccs_result.*,
+        CASE
+          WHEN @unblind_column IS NULL THEN CASE WHEN true_effect_size IS NULL THEN 0 ELSE 1 END
+          ELSE @unblind_column
+        END AS unblind
       FROM @database_schema.sccs_result
       INNER JOIN @database_schema.sccs_covariate
         ON sccs_result.database_id = sccs_covariate.database_id
@@ -520,22 +529,20 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
       INNER JOIN @database_schema.sccs_exposure
         ON sccs_result.exposures_outcome_set_id = sccs_exposure.exposures_outcome_set_id
           AND sccs_covariate.era_id = sccs_covariate.era_id
-      LEFT JOIN (
-        @unblinded
-      ) unblinded
-      ON sccs_result.exposures_outcome_set_id = unblinded.exposures_outcome_set_id
-        AND sccs_result.covariate_id = unblinded.covariate_id
-        AND sccs_result.analysis_id = unblinded.analysis_id
-        AND sccs_result.database_id = unblinded.database_id
-      WHERE (true_effect_size IS NOT NULL OR unblinded.exposures_outcome_set_id IS NOT NULL)
-      {@database_ids != ''} ? {  AND sccs_result.database_id IN (@database_ids)}
-      {@analysis_ids != ''} ? {  AND sccs_result.analysis_id IN (@analysis_ids)};
+      LEFT JOIN @database_schema.sccs_diagnostics_summary
+      ON sccs_result.exposures_outcome_set_id = sccs_diagnostics_summary.exposures_outcome_set_id
+        AND sccs_result.covariate_id = sccs_diagnostics_summary.covariate_id
+        AND sccs_result.analysis_id = sccs_diagnostics_summary.analysis_id
+        AND sccs_result.database_id = sccs_diagnostics_summary.database_id
+      {@database_ids != ''| @analysis_ids != ''} ? {WHERE}
+      {@database_ids != ''} ? {  sccs_result.database_id IN (@database_ids)}
+      {@analysis_ids != ''} ? {  {@database_ids != ''} ? {AND} sccs_result.analysis_id IN (@analysis_ids)};
       "
     estimates <- DatabaseConnector::renderTranslateQuerySql(
       connection = connection,
       sql = sql,
       database_schema = databaseSchema,
-      unblinded = unblinded,
+      unblind_column = unblindColumn,
       database_ids = if (is.null(databaseIds)) "" else quoteSql(databaseIds),
       analysis_ids = if (is.null(analysisIds)) "" else analysisIds,
       snakeCaseToCamelCase = TRUE
@@ -550,6 +557,7 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
 
     if (evidenceSynthesisSource$likelihoodApproximation == "normal") {
       llApproximations <- estimates %>%
+        filter(.data$unblind == 1) %>%
         select(
           "exposuresOutcomeSetId",
           "covariateId",
@@ -574,6 +582,7 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
         snakeCaseToCamelCase = TRUE
       ) %>%
         inner_join(estimates %>%
+                     filter(.data$unblind == 1) %>%
                      select(
                        "exposuresOutcomeSetId",
                        "covariateId",
