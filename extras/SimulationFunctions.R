@@ -29,6 +29,7 @@ simulateTco <- function(targetId, comparatorId, outcomeId, analysisId, hazardRat
                                  outcomeId = outcomeId,
                                  analysisId = analysisId,
                                  databaseId = seq_len(nSites),
+                                 mdrr = 2,
                                  unblind = runif(nSites) < 0.9)
 
   populations <- EvidenceSynthesis::simulatePopulations(simulationSettings)
@@ -153,7 +154,7 @@ simulateEo <- function(exposureId, outcomeId, analysisId, incidenceRateRatio = 1
     attrition <- model$metaData$attrition[nrow(model$metaData$attrition), ]
     covariateStatistics <- model$metaData$covariateStatistics
     estimate <- model$estimates
-    if (nrow(estimate) == 0) {
+    if (is.null(estimate) || nrow(estimate) == 0) {
       p <- NA
     } else {
       z <- estimate$logRr / estimate$seLogRr
@@ -222,6 +223,7 @@ simulateEo <- function(exposureId, outcomeId, analysisId, incidenceRateRatio = 1
     exposuresOutcomeSetId = !!outcomeId,
     analysisId = !!analysisId,
     databaseId = seq_len(nSites),
+    mdrr = 2,
     unblind = runif(nSites) < 0.9
   )
   DatabaseConnector::insertTable(

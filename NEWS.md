@@ -1,3 +1,13 @@
+EvidenceSynthesisModule 0.5.0
+=============================
+
+1. Adding Minimum Detectable Relative Risk (MDRR) as a diagnostic.
+
+2. Adding `createEsDiagnosticThresholds()` function for specifying diagnostics thresholds.
+
+3. Removing WARNING as possible output for diagnostics, adding NOT EVALUATED.
+
+
 EvidenceSynthesisModule 0.4.0
 =============================
 

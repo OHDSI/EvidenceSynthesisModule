@@ -69,7 +69,7 @@ for (outcomeId in 1:26) {
     tableName = "sccs_exposures_outcome_set",
     data = sccsExposuresOutcomeSet,
     createTable = outcomeId == 1,
-    dropTableIfExists = FALSE,
+    dropTableIfExists = outcomeId == 1,
     camelCaseToSnakeCase = TRUE
   )
 
@@ -84,7 +84,7 @@ for (outcomeId in 1:26) {
     tableName = "sccs_exposure",
     data = sccsExposure,
     createTable = outcomeId == 1,
-    dropTableIfExists = FALSE,
+    dropTableIfExists = outcomeId == 1,
     camelCaseToSnakeCase = TRUE
   )
 
@@ -99,7 +99,7 @@ for (outcomeId in 1:26) {
     tableName = "sccs_covariate_analysis",
     data = sccsCovariateAnalysis,
     createTable = outcomeId == 1,
-    dropTableIfExists = FALSE,
+    dropTableIfExists = outcomeId == 1,
     camelCaseToSnakeCase = TRUE
   )
 

@@ -41,7 +41,7 @@ ensureEmptyAndExists <- function(outputTable,resultsFolder) {
   writeToCsv(data = diagnostics, fileName = fileName, append = FALSE)
 }
 
-executeEvidenceSynthesis <- function(connectionDetails, databaseSchema, settings, resultsFolder, minCellCount) {
+executeEvidenceSynthesis <- function(connectionDetails, databaseSchema, settings, esDiagnosticThresholds, resultsFolder, minCellCount) {
   connection <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
 
@@ -58,12 +58,13 @@ executeEvidenceSynthesis <- function(connectionDetails, databaseSchema, settings
     connection = connection,
     databaseSchema = databaseSchema,
     resultsFolder = resultsFolder,
-    minCellCount = minCellCount)
+    minCellCount = minCellCount,
+    esDiagnosticThresholds = esDiagnosticThresholds)
   )
 }
 
 # analysisSettings = settings[[4]]
-doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFolder, minCellCount) {
+doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFolder, minCellCount, esDiagnosticThresholds) {
   perDbEstimates <- getPerDatabaseEstimates(
     connection = connection,
     databaseSchema = databaseSchema,
@@ -133,17 +134,31 @@ doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFold
     mutate(evidenceSynthesisAnalysisId = analysisSettings$evidenceSynthesisAnalysisId)
 
   # Save diagnostics
-  diagnostics <- estimates[, c(perDbEstimates$key, "analysisId", "i2", "tau", "ease", "evidenceSynthesisAnalysisId")] %>%
-    mutate(i2Diagnostic = ifelse(!is.na(i2) & i2 > 0.4, "FAIL", "PASS")) %>%
-    mutate(tauDiagnostic = ifelse(!is.na(tau) & tau > log(2), "FAIL", "PASS")) %>%
-    mutate(easeDiagnostic = case_when(
-      abs(.data$ease) < 0.1 ~ "PASS",
-      abs(.data$ease) < 0.25 ~ "WARNING",
+  diagnostics <- estimates[, c(perDbEstimates$key, "analysisId", "evidenceSynthesisAnalysisId", "mdrr", "ease", "i2", "tau")] %>%
+    mutate(mdrrDiagnostic = case_when(
+      is.na(.data$mdrr) ~ "NOT EVALUATED",
+      .data$mdrr < esDiagnosticThresholds$mdrrThreshold ~ "PASS",
       TRUE ~ "FAIL"
     )) %>%
-    mutate(unblind = ifelse(.data$i2Diagnostic != "FAIL" &
-                              .data$tauDiagnostic != "FAIL" &
-                              .data$easeDiagnostic != "FAIL", 1, 0))
+    mutate(easeDiagnostic = case_when(
+      is.na(.data$ease) ~ "NOT EVALUATED",
+      abs(.data$ease) < esDiagnosticThresholds$easeThreshold ~ "PASS",
+      TRUE ~ "FAIL"
+    )) %>%
+    mutate(i2Diagnostic = case_when(
+      is.na(.data$i2) ~ "NOT EVALUATED",
+      abs(.data$i2) < esDiagnosticThresholds$i2Threshold ~ "PASS",
+      TRUE ~ "FAIL"
+    )) %>%
+    mutate(tauDiagnostic = case_when(
+      is.na(.data$tau) ~ "NOT EVALUATED",
+      abs(.data$tau) < esDiagnosticThresholds$tauThreshold ~ "PASS",
+      TRUE ~ "FAIL"
+    )) %>%
+    mutate(unblind = ifelse(.data$mdrrDiagnostic != "FAIL"&
+                              .data$easeDiagnostic != "FAIL" &
+                              .data$i2Diagnostic != "FAIL" &
+                              .data$tauDiagnostic != "FAIL", 1, 0))
   if (analysisSettings$evidenceSynthesisSource$sourceMethod == "CohortMethod") {
     fileName <- file.path(resultsFolder, "es_cm_diagnostics_summary.csv")
   } else if (analysisSettings$evidenceSynthesisSource$sourceMethod == "SelfControlledCaseSeries") {
@@ -155,7 +170,7 @@ doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFold
 
   # Save estimates
   estimates <- estimates  %>%
-    select(-"trueEffectSize", -"ease", -"i2", -"tau")
+    select(-"trueEffectSize", -"ease", -"i2", -"tau", -"mdrr")
   if (analysisSettings$evidenceSynthesisSource$sourceMethod == "CohortMethod") {
     estimates <- estimates  %>%
       select(-"outcomeOfInterest")
@@ -241,6 +256,13 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
     }
     return(sumCount)
   }
+  computeMdrrFromSe <- function(seLogRr, alpha = 0.05, power = 0.8) {
+    # Based on the computation of a two-sided p-value, power can be computed as
+    # power = 1-pnorm(qnorm(1 - alpha/2) - (log(mdrr) / seLogRr))/2
+    # That can be translated in into:
+    mdrr <- exp((qnorm(1 - alpha/2) - qnorm(2*(1 - power))) * seLogRr)
+    return(mdrr)
+  }
 
   subset <- perDbEstimates$estimates %>%
     inner_join(row, by = c(perDbEstimates$key, "analysisId"))
@@ -296,7 +318,8 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
       logRr = as.numeric(NA),
       seLogRr = as.numeric(NA),
       i2 = as.numeric(NA),
-      tau = as.numeric(NA)
+      tau = as.numeric(NA),
+      mdrr = as.numeric(Inf)
     )
   } else if (nDatabases == 1) {
     estimate <- tibble(
@@ -308,7 +331,8 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
       logRr = subset$logRr,
       seLogRr = subset$seLogRr,
       i2 = NA,
-      tau = NA
+      tau = NA,
+      mdrr = subset$mdrr
     )
   } else {
     if (is(analysisSettings, "FixedEffectsMetaAnalysis")) {
@@ -332,6 +356,7 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
                ci95Ub = ub) %>%
         mutate(i2 = NA,
                tau = NA,
+               mdrr = computeMdrrFromSe(estimate$seLogRr),
                p = !!p,
                oneSidedP = !!oneSidedP)
     } else if (is(analysisSettings, "RandomEffectsMetaAnalysis")) {
@@ -356,7 +381,8 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
         logRr = rfx$TE,
         seLogRr = rfx$seTE,
         i2 = m$I2,
-        tau = NA
+        tau = NA,
+        mdrr = computeMdrrFromSe(rfx$seTE)
       )
     } else if (is(analysisSettings, "BayesianMetaAnalysis")) {
       args <- analysisSettings
@@ -383,7 +409,8 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
                   logRr = .data$mu,
                   seLogRr = .data$muSe,
                   tau = .data$tau,
-                  i2 = NA)
+                  i2 = NA,
+                  mdrr = computeMdrrFromSe(estimate$seLogRr))
     }
   }
   estimate <- bind_cols(row, estimate, counts) %>%
@@ -416,6 +443,7 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
     # for negative controls: if negative control (outcome_of_interest = 0) then
     # still unblind.
     sql <- "SELECT cm_result.*,
+        mdrr,
         CASE
           WHEN @unblind_column IS NULL THEN 1 - outcome_of_interest
           ELSE @unblind_column
@@ -516,6 +544,7 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
       unblindColumn <- "unblind"
     }
     sql <- "SELECT sccs_result.*,
+        mdrr,
         CASE
           WHEN @unblind_column IS NULL THEN CASE WHEN true_effect_size IS NULL THEN 0 ELSE 1 END
           ELSE @unblind_column

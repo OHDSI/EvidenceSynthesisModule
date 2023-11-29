@@ -27,14 +27,15 @@ execute <- function(jobContext) {
   }
 
   writeAnalysisSpecs(
-    analysisSpecs = jobContext$settings,
+    analysisSpecs = jobContext$settings$evidenceSynthesisAnalysisList,
     resultsFolder = jobContext$moduleExecutionSettings$resultsSubFolder
   )
 
   executeEvidenceSynthesis(
     connectionDetails = jobContext$moduleExecutionSettings$resultsConnectionDetails,
     databaseSchema = jobContext$moduleExecutionSettings$resultsDatabaseSchema,
-    settings = jobContext$settings,
+    settings = jobContext$settings$evidenceSynthesisAnalysisList,
+    esDiagnosticThresholds = jobContext$settings$esDiagnosticThresholds,
     resultsFolder = jobContext$moduleExecutionSettings$resultsSubFolder,
     minCellCount = jobContext$moduleExecutionSettings$minCellCount
   )

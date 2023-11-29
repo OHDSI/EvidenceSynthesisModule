@@ -66,7 +66,8 @@ evidenceSynthesisModuleSpecs <- createEvidenceSynthesisModuleSpecifications(
                                        bayesianMetaAnalysisCm,
                                        fixedEffectsMetaAnalysisSccs,
                                        randomEffectsMetaAnalysisSccs,
-                                       bayesianMetaAnalysisSccs))
+                                       bayesianMetaAnalysisSccs),
+  esDiagnosticThresholds = createEsDiagnosticThresholds())
 
 # Module Settings Spec ----------------------------
 analysisSpecifications <- createEmptyAnalysisSpecificiations() %>%
@@ -74,11 +75,9 @@ analysisSpecifications <- createEmptyAnalysisSpecificiations() %>%
 
 ParallelLogger::saveSettingsToJson(analysisSpecifications, "extras/analysisSpecifications.json")
 
-executionSettings <- Strategus::createExecutionSettings(
-  connectionDetailsReference = "dummy",
-  workDatabaseSchema = "main",
-  cdmDatabaseSchema = "main",
-  cohortTableNames = CohortGenerator::getCohortTableNames(cohortTable = "cohort"),
+executionSettings <- Strategus::createResultsExecutionSettings(
+  resultsConnectionDetailsReference = "dummy",
+  resultsDatabaseSchema = "dummy",
   workFolder = "dummy",
   resultsFolder = "dummy",
   minCellCount = 5

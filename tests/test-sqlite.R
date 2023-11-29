@@ -76,7 +76,7 @@ test_that("Include only allowed CM estimates in meta-analysis", {
   expect_gt(sum(criterion1$include1 == 0), 0)
 
   # Determine if valid estimate or LL profile:
-  approximations <- bind_rows(lapply(jobContext$settings, getApproximation))
+  approximations <- bind_rows(lapply(jobContext$settings$evidenceSynthesisAnalysisList, getApproximation))
   sql <- "
     SELECT cm_result.target_id,
       cm_result.comparator_id,
@@ -114,7 +114,7 @@ test_that("Include only allowed CM estimates in meta-analysis", {
 
   # Determine if database was excluded in createEvidenceSynthesisSource():
   databaseIds <- unique(criterion2$databaseId)
-  criterion3 <- bind_rows(lapply(jobContext$settings, getDatabaseIds, databaseIds = databaseIds)) %>%
+  criterion3 <- bind_rows(lapply(jobContext$settings$evidenceSynthesisAnalysisList, getDatabaseIds, databaseIds = databaseIds)) %>%
     mutate(include3 = 1)
 
   # Combine all criteria, and check if agree with results:
@@ -135,7 +135,7 @@ test_that("Include only allowed CM estimates in meta-analysis", {
 
 test_that("Include only allowed SCCS estimates in meta-analysis", {
   # Should only include estimates in meta-analysis that are
-  # 1. Either unblinded or true effect size is known (control)
+  # 1. Unblinded.
   # 2. Has a valid estimate (normal approx) or LL profile (adaptive grid)
   # 3. Is not excluded in createEvidenceSynthesisSource()
   connection <- DatabaseConnector::connect(connectionDetails)
@@ -163,7 +163,7 @@ test_that("Include only allowed SCCS estimates in meta-analysis", {
   expect_gt(sum(criterion1$include1 == 0), 0)
 
   # Determine if valid estimate or LL profile:
-  approximations <- bind_rows(lapply(jobContext$settings, getApproximation))
+  approximations <- bind_rows(lapply(jobContext$settings$evidenceSynthesisAnalysisList, getApproximation))
   sql <- "
     SELECT sccs_result.exposures_outcome_set_id,
       sccs_result.covariate_id,
@@ -198,7 +198,7 @@ test_that("Include only allowed SCCS estimates in meta-analysis", {
 
   # Determine if database was excluded in createEvidenceSynthesisSource():
   databaseIds <- unique(criterion2$databaseId)
-  criterion3 <- bind_rows(lapply(jobContext$settings, getDatabaseIds, databaseIds = databaseIds)) %>%
+  criterion3 <- bind_rows(lapply(jobContext$settings$evidenceSynthesisAnalysisList, getDatabaseIds, databaseIds = databaseIds)) %>%
     mutate(include3 = 1)
 
   # Combine all criteria, and check if agree with results:
@@ -230,11 +230,50 @@ test_that("Output conforms to results model", {
   }
 })
 
-test_that("Throw warning if no unblinded estimates found", {
-  tempJobContext <- jobContext
-  tempJobContext$settings <- list(tempJobContext$settings[[1]])
-  tempJobContext$settings[[1]]$evidenceSynthesisSource$databaseIds <- c(-999, -998, -997)
-  expect_warning(execute(tempJobContext), "No unblinded estimates found")
+test_that("Check MDRR values", {
+  # CohortMethod
+  results <- CohortGenerator::readCsv(file.path(testResultsFolder, "es_cm_result.csv"))
+  diagnostics <- CohortGenerator::readCsv(file.path(testResultsFolder, "es_cm_diagnostics_summary.csv"))
+  combined <- results %>%
+    inner_join(diagnostics, by = join_by(targetId, comparatorId, outcomeId, analysisId, evidenceSynthesisAnalysisId))
+  noDbs <- combined %>%
+    filter(nDatabases == 0)
+  expect_true(all(is.infinite(noDbs$mdrr)))
+  expect_true(all(noDbs$mdrrDiagnostic == "FAIL"))
+  expect_true(all(noDbs$unblind == 0))
+
+  oneDb <- combined %>%
+    filter(nDatabases == 1)
+  # All per-DB MDRRs were set to 2 in simulation code:
+  expect_true(all(oneDb$mdrr == 2))
+  expect_true(all(oneDb$mdrrDiagnostic == "PASS"))
+
+  multiDbs <- combined %>%
+    filter(nDatabases > 1, !is.na(seLogRr))
+
+  expect_true(all(!is.na(multiDbs$mdrr)))
+
+  # SCCS
+  results <- CohortGenerator::readCsv(file.path(testResultsFolder, "es_sccs_result.csv"))
+  diagnostics <- CohortGenerator::readCsv(file.path(testResultsFolder, "es_sccs_diagnostics_summary.csv"))
+  combined <- results %>%
+    inner_join(diagnostics, by = join_by(analysisId, exposuresOutcomeSetId, covariateId, evidenceSynthesisAnalysisId))
+  noDbs <- combined %>%
+    filter(nDatabases == 0)
+  expect_true(all(is.infinite(noDbs$mdrr)))
+  expect_true(all(noDbs$mdrrDiagnostic == "FAIL"))
+  expect_true(all(noDbs$unblind == 0))
+
+  oneDb <- combined %>%
+    filter(nDatabases == 1)
+  # All per-DB MDRRs were set to 2 in simulation code:
+  expect_true(all(oneDb$mdrr == 2))
+  expect_true(all(oneDb$mdrrDiagnostic == "PASS"))
+
+  multiDbs <- combined %>%
+    filter(nDatabases > 1, !is.na(seLogRr))
+
+  expect_true(all(!is.na(multiDbs$mdrr)))
 })
 
 test_that("Don't error when no negative controls present", {
@@ -251,7 +290,7 @@ test_that("Don't error when no negative controls present", {
   DatabaseConnector::disconnect(connection)
 
   tempJobContext <- jobContext
-  tempJobContext$settings <- list(tempJobContext$settings[[1]])
+  tempJobContext$settings$evidenceSynthesisAnalysisList <- list(tempJobContext$settings$evidenceSynthesisAnalysisList[[1]])
   tempJobContext$moduleExecutionSettings$resultsConnectionDetails <- tempConnectionDetails
   execute(tempJobContext)
 
