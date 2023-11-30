@@ -12,10 +12,10 @@ es_cm_diagnostics_summary,mdrr,float,No,No,No,The minimum detectable relative ri
 es_cm_diagnostics_summary,i_2,float,No,No,No,The I2 statistics for heterogeneity.
 es_cm_diagnostics_summary,tau,float,No,No,No,The estimated tau (standard deviation of the random-effects distribution).
 es_cm_diagnostics_summary,ease,float,No,No,No,The expected absolute systematic error.
-es_cm_diagnostics_summary,mdrr_diagnostic,varchar(4),Yes,No,No,PASS/ NOT EVALUATED / FAIL classification of the MDRR diagnostic.
-es_cm_diagnostics_summary,i_2_diagnostic,varchar(4),Yes,No,No,PASS/ NOT EVALUATED / FAIL classification of the I2 diagnostic.
-es_cm_diagnostics_summary,tau_diagnostic,varchar(4),Yes,No,No,PPASS/ NOT EVALUATED / FAIL classification of the tau diagnostic.
-es_cm_diagnostics_summary,ease_diagnostic,varchar(7),Yes,No,No,PASS/ NOT EVALUATED / FAIL classification of the EASE diagnostic.
+es_cm_diagnostics_summary,mdrr_diagnostic,varchar(13),Yes,No,No,PASS/ NOT EVALUATED / FAIL classification of the MDRR diagnostic.
+es_cm_diagnostics_summary,i_2_diagnostic,varchar(13),Yes,No,No,PASS/ NOT EVALUATED / FAIL classification of the I2 diagnostic.
+es_cm_diagnostics_summary,tau_diagnostic,varchar(13),Yes,No,No,PPASS/ NOT EVALUATED / FAIL classification of the tau diagnostic.
+es_cm_diagnostics_summary,ease_diagnostic,varchar(13),Yes,No,No,PASS/ NOT EVALUATED / FAIL classification of the EASE diagnostic.
 es_cm_diagnostics_summary,unblind,int,Yes,No,No,"Is unblinding the result recommended? (1 = yes, 0 = no)"
 es_cm_result,target_id,int,Yes,Yes,No,The identifier for the target cohort.
 es_cm_result,comparator_id,int,Yes,Yes,No,The identifier for the comparator cohort.
@@ -51,10 +51,10 @@ es_sccs_diagnostics_summary,mdrr,float,No,No,No,The minimum detectable relative 
 es_sccs_diagnostics_summary,i_2,float,No,No,No,The I2 statistics for heterogeneity.
 es_sccs_diagnostics_summary,tau,float,No,No,No,The estimated tau (standard deviation of the random-effects distribution).
 es_sccs_diagnostics_summary,ease,float,No,No,No,The expected absolute systematic error.
-es_sccs_diagnostics_summary,mdrr_diagnostic,varchar(4),Yes,No,No,PASS/ NOT EVALUATED / FAIL classification of the MDRR diagnostic.
-es_sccs_diagnostics_summary,i_2_diagnostic,varchar(4),Yes,No,No,Pass / warning / fail classification of the I2 diagnostic.
-es_sccs_diagnostics_summary,tau_diagnostic,varchar(4),Yes,No,No,Pass / warning / fail classification of the tau diagnostic.
-es_sccs_diagnostics_summary,ease_diagnostic,varchar(7),Yes,No,No,Pass / warning / fail classification of the EASE diagnostic.
+es_sccs_diagnostics_summary,mdrr_diagnostic,varchar(13),Yes,No,No,PASS/ NOT EVALUATED / FAIL classification of the MDRR diagnostic.
+es_sccs_diagnostics_summary,i_2_diagnostic,varchar(13),Yes,No,No,Pass / warning / fail classification of the I2 diagnostic.
+es_sccs_diagnostics_summary,tau_diagnostic,varchar(13),Yes,No,No,Pass / warning / fail classification of the tau diagnostic.
+es_sccs_diagnostics_summary,ease_diagnostic,varchar(13),Yes,No,No,Pass / warning / fail classification of the EASE diagnostic.
 es_sccs_diagnostics_summary,unblind,int,Yes,No,No,"Is unblinding the result recommended? (1 = yes, 0 = no)"
 es_sccs_result,analysis_id,int,Yes,Yes,No,A foreign key referencing the sccs_analysis table.
 es_sccs_result,exposures_outcome_set_id,int,Yes,Yes,No,A foreign key referencing the sccs_exposures_outcome_set table.
