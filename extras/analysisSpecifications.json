@@ -108,7 +108,7 @@
         }
       },
       "module": "EvidenceSynthesisModule",
-      "version": "0.5.0",
+      "version": "0.5.1",
       "remoteRepo": "github.com",
       "remoteUsername": "ohdsi",
       "attr_class": ["EvidenceSynthesisModuleSpecifications", "ModuleSpecifications"]

@@ -1,3 +1,8 @@
+EvidenceSynthesisModule 0.5.1
+=============================
+
+1. Minor bugfix (increasing VARCHAR size for diagnostics to contain "NOT EVALUATED").
+
 EvidenceSynthesisModule 0.5.0
 =============================
 

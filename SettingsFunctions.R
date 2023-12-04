@@ -75,7 +75,7 @@ createEvidenceSynthesisModuleSpecifications <- function(evidenceSynthesisAnalysi
   specifications <- list(settings = list(evidenceSynthesisAnalysisList = evidenceSynthesisAnalysisList,
                                          esDiagnosticThresholds = esDiagnosticThresholds),
                          module = "EvidenceSynthesisModule",
-                         version = "0.5.0",
+                         version = "0.5.1",
                          remoteRepo = "github.com",
                          remoteUsername = "ohdsi")
   class(specifications) <- c("EvidenceSynthesisModuleSpecifications", "ModuleSpecifications")
