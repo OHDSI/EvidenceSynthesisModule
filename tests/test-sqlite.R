@@ -1,3 +1,6 @@
+# Use this profile when testing
+# Sys.setenv(RENV_PROFILE = "dev")
+# renv::restore(prompt = FALSE)
 library(testthat)
 
 connectionDetails <- DatabaseConnector::createConnectionDetails(
