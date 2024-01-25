@@ -254,19 +254,8 @@
     "SqlRender": {
       "Package": "SqlRender",
       "Version": "1.16.1",
-      "Source": "GitHub",
-      "RemoteType": "github",
-      "RemoteHost": "api.github.com",
-      "RemoteRepo": "SqlRender",
-      "RemoteUsername": "ohdsi",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "3b1b6bd25ed6d7de1f2beab961470f47f83196e3",
-      "Requirements": [
-        "checkmate",
-        "rJava",
-        "rlang"
-      ],
-      "Hash": "b031a10cc8b31a2e951065da4c8d31b9"
+      "Source": "Repository",
+      "Repository": "CRAN"
     },
     "askpass": {
       "Package": "askpass",

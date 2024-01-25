@@ -101,6 +101,12 @@ updatedPackages <- list(
     Source = "Repository",
     Repository = "CRAN"
   ),
+  list(
+    Package = "SqlRender",
+    Version = "1.16.1",
+    Source = "Repository",
+    Repository = "CRAN"
+  ),
   "OHDSI/EvidenceSynthesis@v0.5.0",
   "OHDSI/CohortGenerator@v0.8.1"
 )
