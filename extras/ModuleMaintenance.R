@@ -77,17 +77,34 @@ updatedPackages <- list(
     Source = "Repository",
     Repository = "CRAN"
   ),
-  "OHDSI/EvidenceSynthesis@v0.5.0",
-  "OHDSI/CohortGenerator@v0.8.1",
-  "OHDSI/ResultModelManager@v0.5.6"
-)
-updatedDevPackages <- list(
+  list(
+    Package = "EmpiricalCalibration",
+    Version = "3.1.2",
+    Source = "Repository",
+    Repository = "CRAN"
+  ),
+  list(
+    Package = "Matrix",
+    Version = "1.6-0",
+    Source = "Repository",
+    Repository = "CRAN"
+  ),
+  list(
+    Package = "metafor",
+    Version = "4.4-0",
+    Source = "Repository",
+    Repository = "CRAN"
+  ),
   list(
     Package = "evaluate",
     Version = "0.22",
     Source = "Repository",
     Repository = "CRAN"
   ),
+  "OHDSI/EvidenceSynthesis@v0.5.0",
+  "OHDSI/CohortGenerator@v0.8.1"
+)
+updatedDevPackages <- list(
   "OHDSI/Eunomia@v1.0.2"
 )
 
