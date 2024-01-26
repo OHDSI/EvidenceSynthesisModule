@@ -19,8 +19,8 @@ evidenceSynthesisSourceCmGrid <- createEvidenceSynthesisSource(
 
 evidenceSynthesisSourceCmNormal <- createEvidenceSynthesisSource(
   sourceMethod = "CohortMethod",
-  databaseIds = c(1,2,4),
-  analysisIds = c(1,3),
+  databaseIds = c(1, 2, 4),
+  analysisIds = c(1, 3),
   likelihoodApproximation = "normal"
 )
 
@@ -31,43 +31,52 @@ evidenceSynthesisSourceSccsGrid <- createEvidenceSynthesisSource(
 
 evidenceSynthesisSourceSccsNormal <- createEvidenceSynthesisSource(
   sourceMethod = "SelfControlledCaseSeries",
-  databaseIds = c(1,2,4),
-  analysisIds = c(1,3),
+  databaseIds = c(1, 2, 4),
+  analysisIds = c(1, 3),
   likelihoodApproximation = "normal"
 )
 
 fixedEffectsMetaAnalysisCm <- createFixedEffectsMetaAnalysis(
   evidenceSynthesisAnalysisId = 1,
-  evidenceSynthesisSource = evidenceSynthesisSourceCmNormal)
+  evidenceSynthesisSource = evidenceSynthesisSourceCmNormal
+)
 
 randomEffectsMetaAnalysisCm <- createRandomEffectsMetaAnalysis(
   evidenceSynthesisAnalysisId = 2,
-  evidenceSynthesisSource = evidenceSynthesisSourceCmNormal)
+  evidenceSynthesisSource = evidenceSynthesisSourceCmNormal
+)
 
 bayesianMetaAnalysisCm <- createBayesianMetaAnalysis(
   evidenceSynthesisAnalysisId = 3,
-  evidenceSynthesisSource = evidenceSynthesisSourceCmGrid)
+  evidenceSynthesisSource = evidenceSynthesisSourceCmGrid
+)
 
 fixedEffectsMetaAnalysisSccs <- createFixedEffectsMetaAnalysis(
   evidenceSynthesisAnalysisId = 4,
-  evidenceSynthesisSource = evidenceSynthesisSourceSccsNormal)
+  evidenceSynthesisSource = evidenceSynthesisSourceSccsNormal
+)
 
 randomEffectsMetaAnalysisSccs <- createRandomEffectsMetaAnalysis(
   evidenceSynthesisAnalysisId = 5,
-  evidenceSynthesisSource = evidenceSynthesisSourceSccsNormal)
+  evidenceSynthesisSource = evidenceSynthesisSourceSccsNormal
+)
 
 bayesianMetaAnalysisSccs <- createBayesianMetaAnalysis(
   evidenceSynthesisAnalysisId = 6,
-  evidenceSynthesisSource = evidenceSynthesisSourceSccsGrid)
+  evidenceSynthesisSource = evidenceSynthesisSourceSccsGrid
+)
 
 evidenceSynthesisModuleSpecs <- createEvidenceSynthesisModuleSpecifications(
-  evidenceSynthesisAnalysisList = list(fixedEffectsMetaAnalysisCm,
-                                       randomEffectsMetaAnalysisCm,
-                                       bayesianMetaAnalysisCm,
-                                       fixedEffectsMetaAnalysisSccs,
-                                       randomEffectsMetaAnalysisSccs,
-                                       bayesianMetaAnalysisSccs),
-  esDiagnosticThresholds = createEsDiagnosticThresholds())
+  evidenceSynthesisAnalysisList = list(
+    fixedEffectsMetaAnalysisCm,
+    randomEffectsMetaAnalysisCm,
+    bayesianMetaAnalysisCm,
+    fixedEffectsMetaAnalysisSccs,
+    randomEffectsMetaAnalysisSccs,
+    bayesianMetaAnalysisSccs
+  ),
+  esDiagnosticThresholds = createEsDiagnosticThresholds()
+)
 
 # Module Settings Spec ----------------------------
 analysisSpecifications <- createEmptyAnalysisSpecificiations() %>%
@@ -89,10 +98,11 @@ moduleIndex <- 1
 moduleExecutionSettings <- executionSettings
 moduleExecutionSettings$workSubFolder <- "dummy"
 moduleExecutionSettings$resultsSubFolder <- "dummy"
-moduleExecutionSettings$resultsConnectionDetailsReference = "dummy"
-moduleExecutionSettings$resultsDatabaseSchema = "main"
-jobContext <- list(sharedResources = analysisSpecifications$sharedResources,
-                   settings = analysisSpecifications$moduleSpecifications[[moduleIndex]]$settings,
-                   moduleExecutionSettings = moduleExecutionSettings)
+moduleExecutionSettings$resultsConnectionDetailsReference <- "dummy"
+moduleExecutionSettings$resultsDatabaseSchema <- "main"
+jobContext <- list(
+  sharedResources = analysisSpecifications$sharedResources,
+  settings = analysisSpecifications$moduleSpecifications[[moduleIndex]]$settings,
+  moduleExecutionSettings = moduleExecutionSettings
+)
 saveRDS(jobContext, "tests/testJobContext.rds")
-

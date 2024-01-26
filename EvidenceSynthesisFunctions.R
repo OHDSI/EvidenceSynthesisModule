@@ -1,4 +1,4 @@
-# Copyright 2022 Observational Health Data Sciences and Informatics
+# Copyright 2024 Observational Health Data Sciences and Informatics
 #
 # This file is part of EvidenceSynthesisModule
 #
@@ -24,7 +24,7 @@ writeAnalysisSpecs <- function(analysisSpecs, resultsFolder) {
     ParallelLogger::saveSettingsToJson(analysisSettings, tempFileName)
     analysis <- tibble(
       evidenceSynthesisAnalysisId = analysisSettings$evidenceSynthesisAnalysisId,
-      evidenceSynthesisDescription =  analysisSettings$evidenceSynthesisDescription,
+      evidenceSynthesisDescription = analysisSettings$evidenceSynthesisDescription,
       sourceMethod = analysisSettings$evidenceSynthesisSource$sourceMethod,
     ) %>%
       mutate(definition = readChar(tempFileName, file.info(tempFileName)$size))
@@ -35,7 +35,7 @@ writeAnalysisSpecs <- function(analysisSpecs, resultsFolder) {
   CohortGenerator::writeCsv(evidenceSynthesisAnalysis, fileName)
 }
 
-ensureEmptyAndExists <- function(outputTable,resultsFolder) {
+ensureEmptyAndExists <- function(outputTable, resultsFolder) {
   diagnostics <- createEmptyResult(outputTable)
   fileName <- file.path(resultsFolder, paste0(outputTable, ".csv"))
   writeToCsv(data = diagnostics, fileName = fileName, append = FALSE)
@@ -45,11 +45,15 @@ executeEvidenceSynthesis <- function(connectionDetails, databaseSchema, settings
   connection <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
 
-  outputTables <- c("es_cm_result",
-                    "es_cm_diagnostics_summary",
-                    "es_sccs_result",
-                    "es_sccs_diagnostics_summary")
-  invisible(lapply(outputTables, function(x){ensureEmptyAndExists(x, resultsFolder)} ))
+  outputTables <- c(
+    "es_cm_result",
+    "es_cm_diagnostics_summary",
+    "es_sccs_result",
+    "es_sccs_diagnostics_summary"
+  )
+  invisible(lapply(outputTables, function(x) {
+    ensureEmptyAndExists(x, resultsFolder)
+  }))
 
   message("Performing evidence synthesis across databases")
   invisible(lapply(
@@ -59,8 +63,8 @@ executeEvidenceSynthesis <- function(connectionDetails, databaseSchema, settings
     databaseSchema = databaseSchema,
     resultsFolder = resultsFolder,
     minCellCount = minCellCount,
-    esDiagnosticThresholds = esDiagnosticThresholds)
-  )
+    esDiagnosticThresholds = esDiagnosticThresholds
+  ))
 }
 
 # analysisSettings = settings[[4]]
@@ -73,16 +77,21 @@ doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFold
   if (nrow(perDbEstimates$estimates) == 0) {
     message <- sprintf(
       "No unblinded estimates found for source method '%s'",
-      analysisSettings$evidenceSynthesisSource$sourceMethod)
+      analysisSettings$evidenceSynthesisSource$sourceMethod
+    )
     if (!is.null(analysisSettings$evidenceSynthesisSource$databaseIds)) {
-      message <- sprintf("%s restricting to database IDs %s",
-                         message,
-                         paste(analysisSettings$evidenceSynthesisSource$databaseIds, collapse = ", "))
+      message <- sprintf(
+        "%s restricting to database IDs %s",
+        message,
+        paste(analysisSettings$evidenceSynthesisSource$databaseIds, collapse = ", ")
+      )
     }
     if (!is.null(analysisSettings$evidenceSynthesisSource$analysisIds)) {
-      message <- sprintf("%s restricting to analysis IDs %s",
-                         message,
-                         paste(analysisSettings$evidenceSynthesisSource$analysisIds, collapse = ", "))
+      message <- sprintf(
+        "%s restricting to analysis IDs %s",
+        message,
+        paste(analysisSettings$evidenceSynthesisSource$analysisIds, collapse = ", ")
+      )
     }
     warning(message)
     return()
@@ -102,7 +111,8 @@ doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFold
     fun = doSingleEvidenceSynthesis,
     perDbEstimates = perDbEstimates,
     analysisSettings = analysisSettings,
-    minCellCount = minCellCount)
+    minCellCount = minCellCount
+  )
   estimates <- bind_rows(estimates)
 
   message("- Calibrating estimates")
@@ -129,7 +139,8 @@ doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFold
   estimates <- ParallelLogger::clusterApply(
     cluster = cluster,
     x = split(estimates, groupKeys),
-    fun = calibrateEstimates)
+    fun = calibrateEstimates
+  )
   estimates <- bind_rows(estimates) %>%
     mutate(evidenceSynthesisAnalysisId = analysisSettings$evidenceSynthesisAnalysisId)
 
@@ -155,10 +166,10 @@ doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFold
       abs(.data$tau) < esDiagnosticThresholds$tauThreshold ~ "PASS",
       TRUE ~ "FAIL"
     )) %>%
-    mutate(unblind = ifelse(.data$mdrrDiagnostic != "FAIL"&
-                              .data$easeDiagnostic != "FAIL" &
-                              .data$i2Diagnostic != "FAIL" &
-                              .data$tauDiagnostic != "FAIL", 1, 0))
+    mutate(unblind = ifelse(.data$mdrrDiagnostic != "FAIL" &
+      .data$easeDiagnostic != "FAIL" &
+      .data$i2Diagnostic != "FAIL" &
+      .data$tauDiagnostic != "FAIL", 1, 0))
   if (analysisSettings$evidenceSynthesisSource$sourceMethod == "CohortMethod") {
     fileName <- file.path(resultsFolder, "es_cm_diagnostics_summary.csv")
   } else if (analysisSettings$evidenceSynthesisSource$sourceMethod == "SelfControlledCaseSeries") {
@@ -169,15 +180,15 @@ doAnalysis <- function(analysisSettings, connection, databaseSchema, resultsFold
   writeToCsv(data = diagnostics, fileName = fileName, append = TRUE)
 
   # Save estimates
-  estimates <- estimates  %>%
+  estimates <- estimates %>%
     select(-"trueEffectSize", -"ease", -"i2", -"tau", -"mdrr")
   if (analysisSettings$evidenceSynthesisSource$sourceMethod == "CohortMethod") {
-    estimates <- estimates  %>%
+    estimates <- estimates %>%
       select(-"outcomeOfInterest")
     fileName <- file.path(resultsFolder, "es_cm_result.csv")
   } else if (analysisSettings$evidenceSynthesisSource$sourceMethod == "SelfControlledCaseSeries") {
     fileName <- file.path(resultsFolder, "es_sccs_result.csv")
-  } else{
+  } else {
     stop(sprintf("Saving results not implemented for source method '%s'", analysisSettings$evidenceSynthesisSource$sourceMethod))
   }
   writeToCsv(data = estimates, fileName = fileName, append = TRUE)
@@ -190,15 +201,19 @@ calibrateEstimates <- function(group) {
   if (nrow(ncs) >= 5) {
     null <- EmpiricalCalibration::fitMcmcNull(logRr = ncs$logRr, seLogRr = ncs$seLogRr)
     ease <- EmpiricalCalibration::computeExpectedAbsoluteSystematicError(null)
-    calibratedP <- EmpiricalCalibration::calibrateP(null = null,
-                                                    logRr = group$logRr,
-                                                    seLogRr = group$seLogRr,
-                                                    twoSided = TRUE)
-    calibratedOneSidedP <- EmpiricalCalibration::calibrateP(null = null,
-                                                            logRr = group$logRr,
-                                                            seLogRr = group$seLogRr,
-                                                            twoSided = FALSE,
-                                                            upper = TRUE)
+    calibratedP <- EmpiricalCalibration::calibrateP(
+      null = null,
+      logRr = group$logRr,
+      seLogRr = group$seLogRr,
+      twoSided = TRUE
+    )
+    calibratedOneSidedP <- EmpiricalCalibration::calibrateP(
+      null = null,
+      logRr = group$logRr,
+      seLogRr = group$seLogRr,
+      twoSided = FALSE,
+      upper = TRUE
+    )
     if (nrow(pcs) >= 5) {
       model <- EmpiricalCalibration::fitSystematicErrorModel(
         logRr = c(ncs$logRr, pcs$logRr),
@@ -260,7 +275,7 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
     # Based on the computation of a two-sided p-value, power can be computed as
     # power = 1-pnorm(qnorm(1 - alpha/2) - (log(mdrr) / seLogRr))/2
     # That can be translated in into:
-    mdrr <- exp((qnorm(1 - alpha/2) - qnorm(2*(1 - power))) * seLogRr)
+    mdrr <- exp((qnorm(1 - alpha / 2) - qnorm(2 * (1 - power))) * seLogRr)
     return(mdrr)
   }
 
@@ -275,9 +290,11 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
   } else if (analysisSettings$evidenceSynthesisSource$likelihoodApproximation == "adaptive grid") {
     includedDbs <- unique(llApproximations$databaseId)
     llApproximations <- llApproximations %>%
-      select(point = .data$logRr,
-             value = .data$logLikelihood,
-             .data$databaseId) %>%
+      select(
+        point = .data$logRr,
+        value = .data$logLikelihood,
+        .data$databaseId
+      ) %>%
       group_by(.data$databaseId) %>%
       group_split()
   }
@@ -343,35 +360,47 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
       args$controlType <- NULL
       args$data <- as.data.frame(llApproximations)
       estimate <- do.call(EvidenceSynthesis::computeFixedEffectMetaAnalysis, args)
-      p <- EmpiricalCalibration::computeTraditionalP(logRr = estimate$logRr,
-                                                     seLogRr = estimate$seLogRr,
-                                                     twoSided = TRUE)
-      oneSidedP <- EmpiricalCalibration::computeTraditionalP(logRr = estimate$logRr,
-                                                             seLogRr = estimate$seLogRr,
-                                                             twoSided = FALSE,
-                                                             upper = TRUE)
+      p <- EmpiricalCalibration::computeTraditionalP(
+        logRr = estimate$logRr,
+        seLogRr = estimate$seLogRr,
+        twoSided = TRUE
+      )
+      oneSidedP <- EmpiricalCalibration::computeTraditionalP(
+        logRr = estimate$logRr,
+        seLogRr = estimate$seLogRr,
+        twoSided = FALSE,
+        upper = TRUE
+      )
       estimate <- estimate %>%
         as_tibble() %>%
-        rename(ci95Lb = lb,
-               ci95Ub = ub) %>%
-        mutate(i2 = NA,
-               tau = NA,
-               mdrr = computeMdrrFromSe(estimate$seLogRr),
-               p = !!p,
-               oneSidedP = !!oneSidedP)
+        rename(
+          ci95Lb = lb,
+          ci95Ub = ub
+        ) %>%
+        mutate(
+          i2 = NA,
+          tau = NA,
+          mdrr = computeMdrrFromSe(estimate$seLogRr),
+          p = !!p,
+          oneSidedP = !!oneSidedP
+        )
     } else if (is(analysisSettings, "RandomEffectsMetaAnalysis")) {
-      m <- meta::metagen(TE = llApproximations$logRr,
-                         seTE = llApproximations$seLogRr,
-                         studlab = rep("", nrow(llApproximations)),
-                         byvar = NULL,
-                         control = list(maxiter=1000),
-                         sm = "RR",
-                         level.comb = 1 - analysisSettings$alpha)
+      m <- meta::metagen(
+        TE = llApproximations$logRr,
+        seTE = llApproximations$seLogRr,
+        studlab = rep("", nrow(llApproximations)),
+        byvar = NULL,
+        control = list(maxiter = 1000),
+        sm = "RR",
+        level.comb = 1 - analysisSettings$alpha
+      )
       rfx <- summary(m)$random
-      oneSidedP <- EmpiricalCalibration::computeTraditionalP(logRr = rfx$TE,
-                                                             seLogRr = rfx$seTE,
-                                                             twoSided = FALSE,
-                                                             upper = TRUE)
+      oneSidedP <- EmpiricalCalibration::computeTraditionalP(
+        logRr = rfx$TE,
+        seLogRr = rfx$seTE,
+        twoSided = FALSE,
+        upper = TRUE
+      )
       estimate <- tibble(
         rr = exp(rfx$TE),
         ci95Lb = exp(rfx$lower),
@@ -392,25 +421,31 @@ doSingleEvidenceSynthesis <- function(row, perDbEstimates, analysisSettings, min
       args$controlType <- NULL
       args$data <- llApproximations
       estimate <- do.call(EvidenceSynthesis::computeBayesianMetaAnalysis, args)
-      p <- EmpiricalCalibration::computeTraditionalP(logRr = estimate$logRr,
-                                                     seLogRr = estimate$seLogRr,
-                                                     twoSided = TRUE)
-      oneSidedP <- EmpiricalCalibration::computeTraditionalP(logRr = estimate$logRr,
-                                                             seLogRr = estimate$seLogRr,
-                                                             twoSided = FALSE,
-                                                             upper = TRUE)
+      p <- EmpiricalCalibration::computeTraditionalP(
+        logRr = estimate$logRr,
+        seLogRr = estimate$seLogRr,
+        twoSided = TRUE
+      )
+      oneSidedP <- EmpiricalCalibration::computeTraditionalP(
+        logRr = estimate$logRr,
+        seLogRr = estimate$seLogRr,
+        twoSided = FALSE,
+        upper = TRUE
+      )
       estimate <- estimate %>%
         as_tibble() %>%
-        transmute(rr = exp(.data$mu),
-                  ci95Lb = exp(.data$mu95Lb),
-                  ci95Ub = exp(.data$mu95Ub),
-                  p = !!p,
-                  oneSidedP = !!oneSidedP,
-                  logRr = .data$mu,
-                  seLogRr = .data$muSe,
-                  tau = .data$tau,
-                  i2 = NA,
-                  mdrr = computeMdrrFromSe(estimate$seLogRr))
+        transmute(
+          rr = exp(.data$mu),
+          ci95Lb = exp(.data$mu95Lb),
+          ci95Ub = exp(.data$mu95Ub),
+          p = !!p,
+          oneSidedP = !!oneSidedP,
+          logRr = .data$mu,
+          seLogRr = .data$muSe,
+          tau = .data$tau,
+          i2 = NA,
+          mdrr = computeMdrrFromSe(estimate$seLogRr)
+        )
     }
   }
   estimate <- bind_cols(row, estimate, counts) %>%
@@ -506,17 +541,18 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
         database_ids = if (is.null(databaseIds)) "" else quoteSql(databaseIds),
         analysis_ids = if (is.null(analysisIds)) "" else analysisIds,
         snakeCaseToCamelCase = TRUE
-      )  %>%
-        inner_join(estimates %>%
-                     filter(.data$unblind == 1) %>%
-                     select(
-                       "targetId",
-                       "comparatorId",
-                       "outcomeId",
-                       "analysisId",
-                       "databaseId",
-                     ),
-                   by = c("targetId", "comparatorId", "outcomeId", "analysisId", "databaseId")
+      ) %>%
+        inner_join(
+          estimates %>%
+            filter(.data$unblind == 1) %>%
+            select(
+              "targetId",
+              "comparatorId",
+              "outcomeId",
+              "analysisId",
+              "databaseId",
+            ),
+          by = c("targetId", "comparatorId", "outcomeId", "analysisId", "databaseId")
         )
     } else {
       stop(sprintf("Unknown likelihood approximation '%s'.", evidenceSynthesisSource$likelihoodApproximation))
@@ -531,9 +567,10 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
       snakeCaseToCamelCase = TRUE
     )
     trueEffectSizes <- trueEffectSizes %>%
-      mutate(trueEffectSize = ifelse (!is.na(.data$trueEffectSize) & .data$trueEffectSize == 0,
-                                      NA,
-                                      .data$trueEffectSize))
+      mutate(trueEffectSize = ifelse(!is.na(.data$trueEffectSize) & .data$trueEffectSize == 0,
+        NA,
+        .data$trueEffectSize
+      ))
   } else if (evidenceSynthesisSource$sourceMethod == "SelfControlledCaseSeries") {
     key <- c("exposuresOutcomeSetId", "covariateId")
     databaseIds <- evidenceSynthesisSource$databaseIds
@@ -610,15 +647,16 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
         analysis_ids = if (is.null(analysisIds)) "" else analysisIds,
         snakeCaseToCamelCase = TRUE
       ) %>%
-        inner_join(estimates %>%
-                     filter(.data$unblind == 1) %>%
-                     select(
-                       "exposuresOutcomeSetId",
-                       "covariateId",
-                       "analysisId",
-                       "databaseId",
-                     ),
-                   by = c("exposuresOutcomeSetId", "covariateId", "analysisId", "databaseId")
+        inner_join(
+          estimates %>%
+            filter(.data$unblind == 1) %>%
+            select(
+              "exposuresOutcomeSetId",
+              "covariateId",
+              "analysisId",
+              "databaseId",
+            ),
+          by = c("exposuresOutcomeSetId", "covariateId", "analysisId", "databaseId")
         )
     } else {
       stop(sprintf("Unknown likelihood approximation '%s'.", evidenceSynthesisSource$likelihoodApproximation))
@@ -643,9 +681,10 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
       snakeCaseToCamelCase = TRUE
     )
     trueEffectSizes <- trueEffectSizes %>%
-      mutate(trueEffectSize = ifelse (!is.na(.data$trueEffectSize) & .data$trueEffectSize == 0,
-                                      NA,
-                                      .data$trueEffectSize))
+      mutate(trueEffectSize = ifelse(!is.na(.data$trueEffectSize) & .data$trueEffectSize == 0,
+        NA,
+        .data$trueEffectSize
+      ))
   } else {
     stop(sprintf("Evidence synthesis for source method '%s' hasn't been implemented yet.", evidenceSynthesisSource$sourceMethod))
   }
@@ -668,7 +707,8 @@ writeToCsv <- function(data, fileName, append) {
 createEmptyResult <- function(tableName = "") {
   columns <- readr::read_csv(
     file = "resultsDataModelSpecification.csv",
-    show_col_types = FALSE) %>%
+    show_col_types = FALSE
+  ) %>%
     SqlRender::snakeCaseToCamelCaseNames() %>%
     filter(.data$tableName == !!tableName) %>%
     pull(.data$columnName) %>%
