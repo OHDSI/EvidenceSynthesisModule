@@ -1,3 +1,8 @@
+EvidenceSynthesisModule 0.6.0
+=============================
+
+1. Using renv project profiles to manage core packages required for module execution vs. those that are needed for development purposes.
+
 EvidenceSynthesisModule 0.5.1
 =============================
 

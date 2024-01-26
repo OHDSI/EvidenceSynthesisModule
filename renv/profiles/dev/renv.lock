@@ -124,6 +124,17 @@
       "Source": "Repository",
       "Repository": "CRAN"
     },
+    "Eunomia": {
+      "Package": "Eunomia",
+      "Version": "1.0.2",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "OHDSI",
+      "RemoteRepo": "Eunomia",
+      "RemoteRef": "v1.0.2",
+      "RemoteSha": "e330860e581bcb33896ef1dbac29549224e0990c"
+    },
     "EvidenceSynthesis": {
       "Package": "EvidenceSynthesis",
       "Version": "0.5.0",

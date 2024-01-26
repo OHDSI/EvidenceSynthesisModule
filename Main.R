@@ -1,4 +1,4 @@
-# Copyright 2022 Observational Health Data Sciences and Informatics
+# Copyright 2024 Observational Health Data Sciences and Informatics
 #
 # This file is part of EvidenceSynthesisModule
 #
@@ -14,6 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Adding library references that are required for Strategus
+library(CohortGenerator)
+library(DatabaseConnector)
+library(keyring)
+library(ParallelLogger)
+library(SqlRender)
+
+# Adding RSQLite so that we can test modules with Eunomia
+library(RSQLite)
+
+# Load helper functions
 source("EvidenceSynthesisFunctions.R")
 
 # Module methods -------------------------
