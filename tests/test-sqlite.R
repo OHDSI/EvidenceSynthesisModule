@@ -14,7 +14,7 @@ testResultsFolder <- tempfile("results")
 dir.create(testResultsFolder)
 jobContext <- readRDS("tests/testJobContext.rds")
 jobContext$moduleExecutionSettings$workSubFolder <- workFolder
-jobContext$moduleExecutionSettings$resultsSubFolder  <- testResultsFolder
+jobContext$moduleExecutionSettings$resultsSubFolder <- testResultsFolder
 jobContext$moduleExecutionSettings$resultsConnectionDetails <- connectionDetails
 
 test_that("Run module", {
@@ -38,8 +38,10 @@ test_that("Skipped analyses as specified", {
 })
 
 getApproximation <- function(setting) {
-  tibble(evidenceSynthesisAnalysisId = setting$evidenceSynthesisAnalysisId,
-         likelihoodApproximation = setting$evidenceSynthesisSource$likelihoodApproximation) %>%
+  tibble(
+    evidenceSynthesisAnalysisId = setting$evidenceSynthesisAnalysisId,
+    likelihoodApproximation = setting$evidenceSynthesisSource$likelihoodApproximation
+  ) %>%
     return()
 }
 
@@ -47,8 +49,10 @@ getDatabaseIds <- function(setting, databaseIds) {
   if (!is.null(setting$evidenceSynthesisSource$databaseIds)) {
     databaseIds <- setting$evidenceSynthesisSource$databaseIds
   }
-  tibble(evidenceSynthesisAnalysisId = setting$evidenceSynthesisAnalysisId,
-         databaseId = databaseIds) %>%
+  tibble(
+    evidenceSynthesisAnalysisId = setting$evidenceSynthesisAnalysisId,
+    databaseId = databaseIds
+  ) %>%
     return()
 }
 
@@ -112,8 +116,9 @@ test_that("Include only allowed CM estimates in meta-analysis", {
   criterion2 <- DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = TRUE) %>%
     cross_join(approximations) %>%
     mutate(include2 = if_else(likelihoodApproximation == "normal",
-                              hasValidEstimate,
-                              hasLlProfile))
+      hasValidEstimate,
+      hasLlProfile
+    ))
 
   # Determine if database was excluded in createEvidenceSynthesisSource():
   databaseIds <- unique(criterion2$databaseId)
@@ -123,8 +128,9 @@ test_that("Include only allowed CM estimates in meta-analysis", {
   # Combine all criteria, and check if agree with results:
   allowed <- criterion1 %>%
     inner_join(criterion2,
-               by = join_by(targetId, comparatorId, outcomeId, analysisId, databaseId),
-               relationship = "one-to-many") %>%
+      by = join_by(targetId, comparatorId, outcomeId, analysisId, databaseId),
+      relationship = "one-to-many"
+    ) %>%
     inner_join(criterion3, by = join_by(databaseId, evidenceSynthesisAnalysisId)) %>%
     mutate(include = include1 & include2 & include3) %>%
     group_by(targetId, comparatorId, outcomeId, analysisId, evidenceSynthesisAnalysisId) %>%
@@ -196,8 +202,9 @@ test_that("Include only allowed SCCS estimates in meta-analysis", {
   criterion2 <- DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = TRUE) %>%
     cross_join(approximations) %>%
     mutate(include2 = if_else(likelihoodApproximation == "normal",
-                              hasValidEstimate,
-                              hasLlProfile))
+      hasValidEstimate,
+      hasLlProfile
+    ))
 
   # Determine if database was excluded in createEvidenceSynthesisSource():
   databaseIds <- unique(criterion2$databaseId)
@@ -207,8 +214,9 @@ test_that("Include only allowed SCCS estimates in meta-analysis", {
   # Combine all criteria, and check if agree with results:
   allowed <- criterion1 %>%
     inner_join(criterion2,
-               by = join_by(exposuresOutcomeSetId, covariateId, analysisId, databaseId),
-               relationship = "one-to-many") %>%
+      by = join_by(exposuresOutcomeSetId, covariateId, analysisId, databaseId),
+      relationship = "one-to-many"
+    ) %>%
     inner_join(criterion3, by = join_by(databaseId, evidenceSynthesisAnalysisId)) %>%
     mutate(include = include1 & include2 & include3) %>%
     group_by(exposuresOutcomeSetId, covariateId, analysisId, evidenceSynthesisAnalysisId) %>%
@@ -221,7 +229,7 @@ test_that("Include only allowed SCCS estimates in meta-analysis", {
 })
 
 test_that("Output conforms to results model", {
-  model <-  CohortGenerator::readCsv(file.path(testResultsFolder, "resultsDataModelSpecification.csv"))
+  model <- CohortGenerator::readCsv(file.path(testResultsFolder, "resultsDataModelSpecification.csv"))
   tables <- unique(model$tableName)
   for (table in tables) {
     data <- readr::read_csv(file.path(testResultsFolder, sprintf("%s.csv", table)), show_col_types = FALSE)

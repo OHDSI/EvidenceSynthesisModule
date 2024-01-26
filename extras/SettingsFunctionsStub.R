@@ -1,4 +1,4 @@
-# Copyright 2022 Observational Health Data Sciences and Informatics
+# Copyright 2024 Observational Health Data Sciences and Informatics
 #
 # This file is part of EvidenceSynthesisModule
 #
@@ -67,11 +67,13 @@ createEvidenceSynthesisModuleSpecifications <- function(evidenceSynthesisAnalysi
     checkmate::assertClass(evidenceSynthesisAnalysisList[[i]], "EvidenceSynthesisAnalysis", add = errorMessages)
   }
   checkmate::reportAssertions(collection = errorMessages)
-  specifications <- list(settings = evidenceSynthesisAnalysisList,
-                         module = "%module%",
-                         version = "%version%",
-                         remoteRepo = "github.com",
-                         remoteUsername = "ohdsi")
+  specifications <- list(
+    settings = evidenceSynthesisAnalysisList,
+    module = "%module%",
+    version = "%version%",
+    remoteRepo = "github.com",
+    remoteUsername = "ohdsi"
+  )
   class(specifications) <- c("EvidenceSynthesisModuleSpecifications", "ModuleSpecifications")
   return(specifications)
 }
@@ -102,4 +104,3 @@ createRandomEffectsMetaAnalysis <- function(alpha = 0.05,
   class(analysis) <- c("RandomEffectsMetaAnalysis", "EvidenceSynthesisAnalysis")
   return(analysis)
 }
-

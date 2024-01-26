@@ -1,4 +1,4 @@
-# Copyright 2022 Observational Health Data Sciences and Informatics
+# Copyright 2024 Observational Health Data Sciences and Informatics
 #
 # This file is part of EvidenceSynthesisModule
 #
@@ -32,11 +32,13 @@ for (outcomeId in 1:26) {
   message(sprintf("Simulating outcome %d", outcomeId))
   outcomeOfInterest <- outcomeId == 1
   trueEffectSize <- if_else(outcomeOfInterest, 2, 1)
-  cmTargetComparatorOutcome <- tibble(targetId = targetId,
-                                      comparatorId = comparatorId,
-                                      outcomeId = outcomeId,
-                                      trueEffectSize = trueEffectSize,
-                                      outcomeOfInterest = outcomeOfInterest)
+  cmTargetComparatorOutcome <- tibble(
+    targetId = targetId,
+    comparatorId = comparatorId,
+    outcomeId = outcomeId,
+    trueEffectSize = trueEffectSize,
+    outcomeOfInterest = outcomeOfInterest
+  )
   DatabaseConnector::insertTable(
     connection = connection,
     databaseSchema = "main",

@@ -1,4 +1,4 @@
-# Copyright 2022 Observational Health Data Sciences and Informatics
+# Copyright 2024 Observational Health Data Sciences and Informatics
 #
 # This file is part of EvidenceSynthesisModule
 #
@@ -19,18 +19,22 @@
 library(survival)
 
 simulateTco <- function(targetId, comparatorId, outcomeId, analysisId, hazardRatio = 1, nSites = 10) {
-  simulationSettings <- EvidenceSynthesis::createSimulationSettings(nSites = nSites,
-                                                                    n = 2500,
-                                                                    treatedFraction = 0.25,
-                                                                    hazardRatio = hazardRatio,
-                                                                    randomEffectSd = if_else(hazardRatio == 1, 0, 0.5))
-  cmDiagnosticsSummary <- tibble(targetId = targetId,
-                                 comparatorId = comparatorId,
-                                 outcomeId = outcomeId,
-                                 analysisId = analysisId,
-                                 databaseId = seq_len(nSites),
-                                 mdrr = 2,
-                                 unblind = runif(nSites) < 0.9)
+  simulationSettings <- EvidenceSynthesis::createSimulationSettings(
+    nSites = nSites,
+    n = 2500,
+    treatedFraction = 0.25,
+    hazardRatio = hazardRatio,
+    randomEffectSd = if_else(hazardRatio == 1, 0, 0.5)
+  )
+  cmDiagnosticsSummary <- tibble(
+    targetId = targetId,
+    comparatorId = comparatorId,
+    outcomeId = outcomeId,
+    analysisId = analysisId,
+    databaseId = seq_len(nSites),
+    mdrr = 2,
+    unblind = runif(nSites) < 0.9
+  )
 
   populations <- EvidenceSynthesis::simulatePopulations(simulationSettings)
   cmResult <- list()
@@ -39,8 +43,9 @@ simulateTco <- function(targetId, comparatorId, outcomeId, analysisId, hazardRat
   for (i in seq_along(populations)) {
     population <- populations[[i]]
     cyclopsData <- Cyclops::createCyclopsData(Surv(time, y) ~ x + strata(stratumId),
-                                              data = population,
-                                              modelType = "cox")
+      data = population,
+      modelType = "cox"
+    )
     cyclopsFit <- Cyclops::fitCyclopsModel(cyclopsData)
     ci <- tryCatch(
       {
@@ -54,31 +59,37 @@ simulateTco <- function(targetId, comparatorId, outcomeId, analysisId, hazardRat
     adaptiveGrid <- EvidenceSynthesis::approximateLikelihood(cyclopsFit, "x", approximation = "adaptive grid")
     z <- normal$logRr / normal$seLogRr
     p <- 2 * pmin(pnorm(z), 1 - pnorm(z))
-    cmResult[[i]] <- tibble(targetId = targetId,
-                            comparatorId = comparatorId,
-                            outcomeId = outcomeId,
-                            analysisId = analysisId,
-                            databaseId = i,
-                            targetSubjects = sum(population$x == 1),
-                            comparatorSubjects = sum(population$x == 0),
-                            targetDays = sum(population$time[population$x == 1]),
-                            comparatorDays = sum(population$time[population$x == 0]),
-                            targetOutcomes = sum(population$y[population$x == 1]),
-                            comparatorOutcomes = sum(population$y[population$x == 0]),
-                            rr = exp(normal$logRr),
-                            ci95Lb = exp(ci[2]),
-                            ci95Ub = exp(ci[3]),
-                            p = p,
-                            logRr = normal$logRr,
-                            seLogRr = normal$seLogRr)
+    cmResult[[i]] <- tibble(
+      targetId = targetId,
+      comparatorId = comparatorId,
+      outcomeId = outcomeId,
+      analysisId = analysisId,
+      databaseId = i,
+      targetSubjects = sum(population$x == 1),
+      comparatorSubjects = sum(population$x == 0),
+      targetDays = sum(population$time[population$x == 1]),
+      comparatorDays = sum(population$time[population$x == 0]),
+      targetOutcomes = sum(population$y[population$x == 1]),
+      comparatorOutcomes = sum(population$y[population$x == 0]),
+      rr = exp(normal$logRr),
+      ci95Lb = exp(ci[2]),
+      ci95Ub = exp(ci[3]),
+      p = p,
+      logRr = normal$logRr,
+      seLogRr = normal$seLogRr
+    )
     cmLikelihoodProfile[[i]] <- adaptiveGrid %>%
-      rename(logRr = .data$point,
-             logLikelihood = .data$value) %>%
-      mutate(targetId = targetId,
-             comparatorId = comparatorId,
-             outcomeId = outcomeId,
-             analysisId = analysisId,
-             databaseId = i)
+      rename(
+        logRr = .data$point,
+        logLikelihood = .data$value
+      ) %>%
+      mutate(
+        targetId = targetId,
+        comparatorId = comparatorId,
+        outcomeId = outcomeId,
+        analysisId = analysisId,
+        databaseId = i
+      )
   }
   cmResult <- bind_rows(cmResult)
   cmLikelihoodProfile <- bind_rows(cmLikelihoodProfile)
@@ -183,13 +194,17 @@ simulateEo <- function(exposureId, outcomeId, analysisId, incidenceRateRatio = 1
     )
 
     sccsLikelihoodProfile[[i]] <- model$logLikelihoodProfiles[[1]] %>%
-      rename(logRr = "point",
-             logLikelihood = "value") %>%
-      mutate(exposuresOutcomeSetId = outcomeId,
-             covariateId = covariateSettings$outputIds[1],
-             outcomeId = outcomeId,
-             analysisId = analysisId,
-             databaseId = i)
+      rename(
+        logRr = "point",
+        logLikelihood = "value"
+      ) %>%
+      mutate(
+        exposuresOutcomeSetId = outcomeId,
+        covariateId = covariateSettings$outputIds[1],
+        outcomeId = outcomeId,
+        analysisId = analysisId,
+        databaseId = i
+      )
   }
   sccsResult <- bind_rows(sccsResult)
   sccsLikelihoodProfile <- bind_rows(sccsLikelihoodProfile)
