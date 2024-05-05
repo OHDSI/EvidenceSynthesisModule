@@ -1,3 +1,8 @@
+EvidenceSynthesisModule 0.6.1
+=============================
+
+1. Restore SettingsFunction.R file from v0.5.1.
+
 EvidenceSynthesisModule 0.6.0
 =============================
 
