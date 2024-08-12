@@ -667,7 +667,7 @@ getPerDatabaseEstimates <- function(connection, databaseSchema, evidenceSynthesi
               "analysisId",
               "databaseId",
             ),
-          by = c("exposuresOutcomeSetId", "covariateId", "outcomeId", "analysisId", "databaseId")
+          by = c("exposuresOutcomeSetId", "covariateId", "analysisId", "databaseId")
         )
     } else {
       stop(sprintf("Unknown likelihood approximation '%s'.", evidenceSynthesisSource$likelihoodApproximation))
