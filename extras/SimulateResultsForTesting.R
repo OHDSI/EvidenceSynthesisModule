@@ -63,7 +63,8 @@ for (outcomeId in 1:26) {
 
   sccsExposuresOutcomeSet <- tibble(
     exposuresOutcomeSetId = outcomeId,
-    outcomeId = !!outcomeId
+    outcomeId = !!outcomeId,
+    nestingCohortId = NA
   )
   DatabaseConnector::insertTable(
     connection = connection,

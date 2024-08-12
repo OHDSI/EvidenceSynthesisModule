@@ -1,3 +1,8 @@
+EvidenceSynthesisModule 0.6.2
+=============================
+
+1. Fixing grouping of negative outcome controls when there are multiple exposures (and/or multiple indications).
+
 EvidenceSynthesisModule 0.6.1
 =============================
 
